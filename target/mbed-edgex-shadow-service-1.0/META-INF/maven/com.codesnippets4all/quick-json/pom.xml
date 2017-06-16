@@ -1,0 +1,130 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.codesnippets4all</groupId>
+  <artifactId>quick-json</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0.4</version>
+  <name>quick-json</name>
+  <description>quick-json parser</description>
+  <url>http://maven.apache.org</url>
+  
+<distributionManagement>
+  <repository>
+    <id>sonatype</id>
+    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+  </repository>
+</distributionManagement>
+
+<licenses>
+  <license>
+    <name>Apache License, Version 2.0</name>
+    <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    <distribution>repo</distribution>
+    <comments>A business-friendly OSS license</comments>
+  </license>
+</licenses>
+
+  <developers>
+    <developer>
+      <id>rajesh</id>
+      <name>Rajesh Putta</name>
+      <email>rajeshkhanna.putta@gmail.com</email>
+      <url>http://www.codesnippets4all.com</url>
+      <organization>CodeSnippets4All</organization>
+      <organizationUrl>http://www.codesnippets4all.com</organizationUrl>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+      <properties>
+        <picUrl>https://plus.google.com/+RajeshPutta_CodeSnippets4All?prsrc=5</picUrl>
+      </properties>
+    </developer>
+  </developers> 
+
+  <scm>
+    <connection>scm:svn:http://quick-json.googlecode.com/svn/trunk/1.0.3/</connection>
+    <developerConnection>scm:svn:http://quick-json.googlecode.com/svn/trunk/1.0.3/</developerConnection>
+    <url>http://quick-json.googlecode.com/svn/trunk/1.0.3/</url>
+  </scm>
+
+  <build>
+    <sourceDirectory>src/main/java</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </resource>
+    </resources>
+    
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source/>
+          <target/>
+        </configuration>
+      </plugin>
+      
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-javadoc-plugin</artifactId>
+	  <executions>  
+	    <execution>
+	      <id>attach-javadocs</id>
+	      <goals>
+	        <goal>jar</goal>
+	      </goals>
+	    </execution>
+	  </executions>
+	</plugin>
+
+	<plugin>
+	  <artifactId>maven-source-plugin</artifactId>
+	  <executions>
+	    <execution>
+	      <id>attach-sources</id>
+	      <goals>
+	        <goal>jar</goal>
+	      </goals>
+	    </execution>
+	  </executions>
+	</plugin>
+	
+	
+	<plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-gpg-plugin</artifactId>
+      <version>1.5</version>
+      <executions>
+        <execution>
+          <id>sign-artifacts</id>
+          <phase>verify</phase>
+          <goals>
+            <goal>sign</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+
+	<plugin>
+	  <groupId>org.sonatype.plugins</groupId>
+	  <artifactId>nexus-staging-maven-plugin</artifactId>
+	  <version>1.6.3</version>
+	  <extensions>true</extensions>
+	  <configuration>
+	     <serverId>sonatype</serverId>
+	     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+	     <autoReleaseAfterClose>true</autoReleaseAfterClose>
+	  </configuration>
+	</plugin>
+
+
+
+    </plugins>
+  </build>
+ </project>
