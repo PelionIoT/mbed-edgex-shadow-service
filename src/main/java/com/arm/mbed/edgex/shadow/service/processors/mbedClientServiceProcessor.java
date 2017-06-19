@@ -97,12 +97,15 @@ public class mbedClientServiceProcessor extends BaseClass {
     }
     
     // create the authorization JSON
-    private String createAuthJSON() {
+    private String createAuthJSON(String ept) {
         // Create the JSON as a Map
         HashMap<String,String> map = new HashMap<>();
         map.put("accessKey", this.m_mcs_access_key);
         map.put("domain",this.m_mcs_domain_id);
         map.put("service",this.m_mcs_service_name);
+        if (ept != null && ept.length() > 0) {
+            map.put("type",ept);
+        }
         
         // Convert to JSON string
         return Utils.removeArray(this.jsonGenerator().generateJson(map));
@@ -397,7 +400,7 @@ public class mbedClientServiceProcessor extends BaseClass {
         
         // 1: Create the Device via mCS POST 
         String url = this.createMCSDevicesURL();
-        String auth_json_str = this.createAuthJSON();
+        String auth_json_str = this.createAuthJSON((String)mbed_device.get("ept"));
         String response = this.m_http.httpPost(url, auth_json_str);
         
         try {
