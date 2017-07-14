@@ -180,15 +180,32 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     // lookup the mbed ID for a given EdgeX Name
     public String lookupMbedName(String edgex_name) {
         // iterate over the db and validate each...
-        for (HashMap.Entry mbed_device : this.m_id_map_db.entrySet()) {
+        for (HashMap.Entry device : this.m_id_map_db.entrySet()) {
             // get the ith entry...
-            String mbed_id = (String)mbed_device.getKey();
-            String tmp_edgex_name = (String)mbed_device.getValue();
+            String mbed_id = (String)device.getKey();
+            String tmp_edgex_name = (String)device.getValue();
             
             // if we match, return
             if (tmp_edgex_name.equalsIgnoreCase(edgex_name) == true) {
                 // matched! return the mbed Name
                 return mbed_id;
+            }
+        }
+        return null;
+    }
+    
+    // lookup the EdgeX Name for a given mbed Name
+    public String lookupEdgeXName(String mbed_id) {
+        // iterate over the db and validate each...
+        for (HashMap.Entry device : this.m_id_map_db.entrySet()) {
+            // get the ith entry...
+            String tmp_mbed_id = (String)device.getKey();
+            String edgex_name = (String)device.getValue();
+            
+            // if we match, return
+            if (tmp_mbed_id.equalsIgnoreCase(mbed_id) == true) {
+                // matched! return the EdgeX Name
+                return edgex_name;
             }
         }
         return null;

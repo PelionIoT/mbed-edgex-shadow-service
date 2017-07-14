@@ -47,9 +47,9 @@ public final class Manager {
     private PreferenceManager m_preference_manager = null;
 
     // instance factory
-    public static Manager getInstance(HttpServlet servlet) {
+    public static Manager getInstance(HttpServlet servlet,String own_ip_address,int own_port) {
         if (Manager.m_manager == null) {
-            Manager.m_manager = new Manager(new ErrorLogger());
+            Manager.m_manager = new Manager(new ErrorLogger(),own_ip_address,own_port);
         }
         Manager.m_manager.setServlet(servlet);
         return Manager.m_manager;
@@ -57,7 +57,7 @@ public final class Manager {
 
     // default constructor
     @SuppressWarnings("empty-statement")
-    public Manager(ErrorLogger error_logger) {
+    public Manager(ErrorLogger error_logger,String own_ip_address,int own_port) {
         // save the error handler
         this.m_error_logger = error_logger;
         this.m_preference_manager = new PreferenceManager(this.m_error_logger);
@@ -69,7 +69,7 @@ public final class Manager {
         this.m_error_logger.configureLoggingLevel(this.m_preference_manager);
         
         // create the mCS Processor
-        this.m_mcs = new mbedClientServiceProcessor(this.m_error_logger,this.m_preference_manager);
+        this.m_mcs = new mbedClientServiceProcessor(this.m_error_logger,this.m_preference_manager,own_ip_address,own_port);
         
         // add our EdgeX event processor
         this.m_event_processor = new EdgeXEventProcessor(this.m_error_logger,this.m_preference_manager,this.m_mcs);

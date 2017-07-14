@@ -22,7 +22,6 @@
  */
 package com.arm.mbed.edgex.shadow.service.transport;
 
-import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
 import java.io.BufferedReader;
@@ -39,23 +38,28 @@ import java.net.URLConnection;
  *
  * @author Doug Anson
  */
-public class HttpTransport extends BaseClass {
+public class HttpTransport {
 
     private int m_last_response_code = 0;
+    private ErrorLogger m_error_logger = null;
+    private PreferenceManager m_preference_manager = null;
+    private String m_content_type = null;
 
-    // constructor
     /**
-     *
+     * constructor
      * @param error_logger
      * @param preference_manager
      */
     public HttpTransport(ErrorLogger error_logger, PreferenceManager preference_manager) {
-        super(error_logger, preference_manager);
+        this.m_error_logger = error_logger;
+        this.m_preference_manager = preference_manager;
+        if (preference_manager != null) {
+            this.m_content_type = preference_manager.valueOf("content_type");
+        }
     }
-
-    // execute GET over http
+    
     /**
-     *
+     * execute GET over http
      * @param url_str
      * @return
      */
@@ -63,9 +67,8 @@ public class HttpTransport extends BaseClass {
         return this.doHTTP("GET", url_str, null, this.contentType());
     }
 
-    // execute POST over http
     /**
-     *
+     * execute POST over http
      * @param url_str
      * @param data
      * @return
@@ -73,11 +76,9 @@ public class HttpTransport extends BaseClass {
     public String httpPost(String url_str, String data) {
         return this.doHTTP("POST", url_str, data, this.contentType());
     }
-
-
-    // execute PUT over http
+    
     /**
-     *
+     * execute PUT over http
      * @param url_str
      * @param data
      * @return
@@ -86,9 +87,8 @@ public class HttpTransport extends BaseClass {
         return this.doHTTP("PUT", url_str, data, this.contentType());
     }
 
-    // execute DELETE over http
     /**
-     *
+     * execute DELETE over http
      * @param url_str
      * @param data
      * @return
@@ -97,10 +97,15 @@ public class HttpTransport extends BaseClass {
         return this.doHTTP("DELETE", url_str, data, this.contentType());
     }
 
+    // save the last response code
     private void saveResponseCode(int response_code) {
         this.m_last_response_code = response_code;
     }
 
+    /**
+     * get the last response code
+     * @return
+     */
     public int getLastResponseCode() {
         return this.m_last_response_code;
     }
@@ -192,5 +197,20 @@ public class HttpTransport extends BaseClass {
 
         // return the result
         return result;
+    }
+    
+    // our defaulted content type
+    private String contentType() {
+        return this.m_content_type;
+    }
+    
+    // get our error handler
+    private com.arm.mbed.edgex.shadow.service.core.ErrorLogger errorLogger() {
+        return this.m_error_logger;
+    }
+
+    // get the preferenceManager
+    private com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager preferences() {
+        return this.m_preference_manager;
     }
 }

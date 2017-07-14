@@ -25,6 +25,7 @@ package com.arm.mbed.edgex.shadow.service.core;
 import com.arm.mbed.edgex.shadow.service.json.JSONGenerator;
 import com.arm.mbed.edgex.shadow.service.json.JSONParser;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
+import com.arm.mbed.edgex.shadow.service.transport.HttpTransport;
 
 /**
  * Base Class for fundamental logging and preferenceManager support
@@ -38,6 +39,7 @@ public class BaseClass {
     private JSONParser m_parser = null;
     private JSONGenerator m_generator = null;
     private String m_content_type = null;
+    protected HttpTransport m_http = null;
 
     // constructor
     /**
@@ -53,6 +55,9 @@ public class BaseClass {
         if (preference_manager != null) {
             this.m_content_type = preference_manager.valueOf("content_type");
         }
+        
+        // create the HTTP transport
+        this.m_http = new HttpTransport(error_logger,preference_manager);
     }
     
     // our defaulted content type
@@ -95,6 +100,15 @@ public class BaseClass {
      */
     protected String prefValue(String key) {
         return this.prefValue(key, null);
+    }
+    
+    /**
+     *
+     * @param value
+     * @return
+     */
+    protected String getKeyForValue(String value) {
+        return this.m_preference_manager.getKeyForValue(value);
     }
 
     /**

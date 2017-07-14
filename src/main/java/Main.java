@@ -25,6 +25,7 @@ import com.arm.mbed.edgex.shadow.service.servlet.Manager;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
 import com.arm.mbed.edgex.shadow.service.servlet.EventsProcessor;
+import java.net.Inet4Address;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -43,9 +44,12 @@ public class Main {
 
         // configure the error logger logging level
         logger.configureLoggingLevel(preferences);
+        
+        // get our OWN port number
+        int own_port = preferences.intValueOf("shadow_service_port");
 
         // initialize the server,,,
-        Server server = new Server(preferences.intValueOf("shadow_service_port"));
+        Server server = new Server(own_port);
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath(preferences.valueOf("context_path"));
@@ -61,8 +65,14 @@ public class Main {
             sslConnector.setPassword(preferences.valueOf("keystore_password"));
             server.addConnector(sslConnector);
         }
+        
+        // get our OWN IP Address
+        String own_ip_address = Inet4Address.getLocalHost().getHostAddress();
+        
+        // Announce
+        System.out.println("mbed Shadow Service Starting: host: " + own_ip_address + " port: " + own_port);
 
-        EventsProcessor eventsProcessor = new EventsProcessor();
+        EventsProcessor eventsProcessor = new EventsProcessor(own_ip_address,own_port);
         final Manager manager = eventsProcessor.manager();
         manager.initialize();
         

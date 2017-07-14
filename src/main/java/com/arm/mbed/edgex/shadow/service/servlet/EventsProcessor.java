@@ -38,12 +38,16 @@ import javax.servlet.http.HttpServletResponse;
 public class EventsProcessor extends HttpServlet {
 
     private Manager m_manager = null;
+    private String m_own_ip_address = null;
+    private int m_own_port = 0;
 
     // constructor
-    public EventsProcessor() {
+    public EventsProcessor(String own_ip_address,int own_port) {
         super();
+        this.m_own_ip_address = own_ip_address;
+        this.m_own_port = own_port;
         if (this.m_manager == null) {
-            this.m_manager = Manager.getInstance(this);
+            this.m_manager = Manager.getInstance(this,this.m_own_ip_address,this.m_own_port);
         }
     }
 
@@ -65,10 +69,10 @@ public class EventsProcessor extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // allocate the event processor if its not allocated already
         if (this.m_manager == null) {
-            this.m_manager = Manager.getInstance(this);
+            this.m_manager = Manager.getInstance(this,this.m_own_ip_address,this.m_own_port);
         }
 
-        // show our console
+        // process the event
         this.m_manager.processEvent(request, response);
     }
 

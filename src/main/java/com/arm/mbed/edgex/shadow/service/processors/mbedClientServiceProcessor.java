@@ -27,8 +27,9 @@ import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
-import com.arm.mbed.edgex.shadow.service.transport.HttpTransport;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +43,6 @@ import javax.servlet.http.HttpServletResponse;
  * @author Doug Anson
  */
 public class mbedClientServiceProcessor extends BaseClass {
-    private HttpTransport m_http = null;
     private EdgeXEventProcessor m_edgex = null;
     private mbedDeviceShadowDatabase m_db = null;
     private String m_default_shadow_ept = null;
@@ -56,14 +56,21 @@ public class mbedClientServiceProcessor extends BaseClass {
     private String m_mcs_device_uri = null;
     private String m_mcs_resources_uri = null;
     private String m_mcs_register_uri = null;
+    private String m_mcs_webhook_events_uri = null;
+    
+    private String m_own_ip_address = null;
+    private int m_own_port = 0;
+    private String m_own_webhook_uri = null;
+    
+    // enable/disable webhook eventing to mCS
+    private boolean m_webhook_eventing_enabled = false;
+    private boolean m_webhook_in_retry = false;
+    private boolean m_webhook_config_error = false;
     
     // default constructor
-    public mbedClientServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager) {
+    public mbedClientServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager,String own_ip_address,int own_port) {
         super(error_logger, preference_manager);
-        
-        // create the HTTP transport
-        this.m_http = new HttpTransport(error_logger,preference_manager);
-        
+       
         // create the shadow database
         this.m_db = new mbedDeviceShadowDatabase(error_logger,preference_manager);
         
@@ -79,6 +86,30 @@ public class mbedClientServiceProcessor extends BaseClass {
         this.m_mcs_device_uri = preference_manager.valueOf("mcs_device_uri");
         this.m_mcs_resources_uri = preference_manager.valueOf("mcs_resources_uri");
         this.m_mcs_register_uri = preference_manager.valueOf("mcs_register_uri");
+        this.m_mcs_webhook_events_uri = preference_manager.valueOf("mcs_webhook_events_uri");
+        
+        // gather our own configuration elements
+        this.m_own_ip_address = own_ip_address;
+        this.m_own_port = own_port;
+        this.m_own_webhook_uri = preference_manager.valueOf("events_path");
+        
+        // webhook configuration
+        this.m_webhook_eventing_enabled = preference_manager.booleanValueOf("mcs_enable_webhook_eventing");
+    }
+    
+    // our configuration status for the webhook
+    private boolean webhookConfigurationError() {
+        return this.m_webhook_config_error;
+    }
+    
+    // create our OWN webhook URL 
+    private String createOwnCallbackURL() {
+        return "http://" + this.m_own_ip_address + ":" + this.m_own_port + this.m_own_webhook_uri;
+    }
+    
+    // create our mCS webhook Eventing URL
+    private String createWebhookEventingURL() {
+        return "http://" + this.m_mcs_ip_address + ":" + this.m_mcs_port + this.m_mcs_webhook_events_uri;
     }
     
     // create the devices URI
@@ -157,10 +188,188 @@ public class mbedClientServiceProcessor extends BaseClass {
     // initialize the mbed Client service processor
     public boolean initialize() {
         // initialize the database
-        boolean status = this.m_db.initialize(this);
+        boolean success = this.m_db.initialize(this);
+        
+        // if OK, establish the webhook
+        if (success == true && this.m_webhook_eventing_enabled == true) {
+            // setup the mCS webhook
+            success = this.setupWebhook();
+        }
+        else if (success == true) {
+            // bypassing webhook setup
+            this.errorLogger().info("mbedClientServiceProcessor(initialize): mCS webhook-based eventing is DISABLED (OK).");
+        }
         
         // return our status
-        return status;
+        return success;
+    }
+    
+    // initialize the webhook for processing get/put/post/delete operations down to EdgeX
+    private boolean setupWebhook() {
+        this.errorLogger().info("mbedClientServiceProcessor(setupWebhook): checking current configuration of the webhook...");
+        boolean setup = this.webhookSet();
+        if (this.webhookConfigurationError() == false) {
+            if (setup == false) {
+                // establish the webhook
+                this.errorLogger().info("mbedClientServiceProcessor(setupWebhook): webhook is not established... Establishing...");
+                setup = this.establishWebhook();
+            }
+            else {
+                // already established
+                this.errorLogger().info("mbedClientServiceProcessor(setupWebhook): webhook already configured and established (OK).");
+            }
+        }
+        else {
+            // unable to setup the webhook
+            this.errorLogger().warning("mbedClientServiceProcessor(setupWebhook): Unable to establish webhook due to errors.");
+            setup = false;
+        }
+        return setup;
+    }
+    
+    // determine if the webhook is set
+    private boolean webhookSet() {
+        boolean setup = false;
+        
+        // create the mCS webhook URL
+        String mcs_webhook_eventing_url = this.createWebhookEventingURL();
+        
+        // create our own callback URL
+        String own_callback_url = this.createOwnCallbackURL();
+        
+        // get the current value
+        String json = this.m_http.httpGet(mcs_webhook_eventing_url);
+        
+        // parse if we received a good result
+        if (this.m_http.getLastResponseCode() < 300) {
+            if (json != null && json.length() > 0) {
+                Map parsed = this.jsonParser().parseJson(json);
+                String parsed_url = (String)parsed.get("url");
+                boolean url_active = (Boolean)parsed.get("active");
+                if (parsed_url != null && parsed_url.length() > 0) {
+                    if (parsed_url.equalsIgnoreCase(own_callback_url) == true && url_active == true) {
+                        // webhook set and confirmed
+                        this.errorLogger().info("webhookSet: URL: " + parsed_url + " active: " + url_active + " set and confirmed OK already (OK).");
+                        setup = true;
+                        this.m_webhook_config_error = false;
+                    }
+                    else if (parsed_url.equalsIgnoreCase(own_callback_url) == true) {
+                        // webhook set but NOT confirmed
+                        this.errorLogger().warning("webhookSet: URL: " + parsed_url + " active: " + url_active + " set correctly but NOT confirmable (ERROR).");
+                        setup = true;
+                        this.m_webhook_config_error = true;
+                    }
+                    else {
+                        // webhook not set correctly...
+                        this.errorLogger().warning("webhookSet: URL: " + parsed_url + " different from our URL: " + own_callback_url + "... Deleting...");
+
+                        // one-shot try to delete and reset the webhook
+                        if (this.m_webhook_in_retry == false) {
+                            // one-shot
+                            this.m_webhook_in_retry = true;
+
+                            // delete the old webhook
+                            this.m_http.httpDelete(mcs_webhook_eventing_url,null);
+
+                            // retry... 
+                            this.errorLogger().warning("webhookSet: Retrying webhook confirmation...");
+                            setup = this.webhookSet();
+                        }
+                        else {
+                            // permanent failure
+                            this.errorLogger().warning("webhookSet: URL: " + parsed_url + " different from our URL: " + own_callback_url + ". Unable to delete and reset (ERROR).");
+                            setup = true;
+                        }
+                    }
+                }
+                else {
+                    // webhook not setup
+                    this.errorLogger().info("webhookSet: Webhook is UNSET (OK).");
+                    setup = false;
+                    this.m_webhook_config_error = false;
+                }
+            }
+            else {
+                // webhook query succeeded (20x) but GET returned nothing... ERROR
+                this.errorLogger().warning("webhookSet: webhook GET query status code: " + this.m_http.getLastResponseCode() + " gave NULL/empty response (ERROR)");
+                setup = false;
+                this.m_webhook_config_error = true;
+            }
+        }
+        else {
+            // unable to query the webhook status
+            this.errorLogger().warning("webhookSet: Unable to query mCS for webhook status (ERROR) status code: " + this.m_http.getLastResponseCode());
+            setup = false;
+            this.m_webhook_config_error = true;
+        }
+        
+        // reset our retry if everything is OK after the retry...
+        if (setup == true && this.m_webhook_config_error == false) {
+            this.m_webhook_in_retry = false;
+        }
+        
+        // return the setup status
+        return setup;
+    }
+    
+    // establish the webhook for mCS
+    private boolean establishWebhook() {
+        boolean success = false;
+        
+        // create the mCS webhook URL
+        String mcs_webhook_eventing_url = this.createWebhookEventingURL();
+        
+        // create our own callback URL
+        String own_callback_url = this.createOwnCallbackURL();
+        
+        // create our JSON payload to send to establish the webhook
+        String json = "{\"url\":\"" + own_callback_url + "\"}";
+        
+        // set the webhook
+        this.errorLogger().info("establishWebhook: mCS URL: " + mcs_webhook_eventing_url + " JSON: " + json);
+        String result = this.m_http.httpPut(mcs_webhook_eventing_url,json);
+        if (this.m_http.getLastResponseCode() < 300) {
+            // PUT success... lets validate 
+            success = this.webhookSet();
+            if (success == true) {
+                // set succeeded and validation succeeeded
+                this.errorLogger().info("establishWebhook: mCS webhook set SUCCESSFUL: " + result);
+                success = true;
+            }
+            else {
+                // set succeeded, but validation failed
+                this.errorLogger().warning("establishWebhook: mCS webhook set succeeded but validation FAILED.");
+                success = false;
+            }
+        }
+        else {
+            // ERROR: unable to establish the webhook
+            this.errorLogger().warning("establishWebhook: mCS webhook set failed with error: " + this.m_http.getLastResponseCode() + " result: " + result);
+            success = false;
+        }
+        
+        // return our status
+        return success;
+    }
+    
+    // process an mCS event
+    private HashMap<String,Object> processEvent(Map request) {
+        HashMap<String,Object> response = new HashMap<>();
+        HashMap<String,String> headers = new HashMap<>();
+        
+        // set defaults
+        response.put("content-type", "application/json");
+        response.put("headers",headers);
+        response.put("data", "{}");
+        
+        // lets process the event and get any answers back from EdgeX
+        String response_json = this.edgeXEventProcessor().processEvent(request);
+        if (response_json != null && response_json.length() > 0) {
+            response.put("data",response_json);
+        }
+        
+        // return the response
+        return response;
     }
     
     // process mCS events
@@ -170,7 +379,82 @@ public class mbedClientServiceProcessor extends BaseClass {
         // DEBUG
         this.errorLogger().info("processEvent: Received mCS device event: " + request);
         
-        // XXX
+        // Get the payload provided by the request
+        String request_data = this.readRequestData(request);
+        
+        // Parse the request
+        if (request_data != null && request_data.length() > 0) {
+            if (request_data.equalsIgnoreCase("{}")) {
+                // empty ping - send empty back
+                this.errorLogger().info("processEvent: webhook PING (OK)");
+                
+                // send an empty response back
+                this.sendResponse(response,"application/json",null,"{}");
+            }
+            else {
+                // Parse
+                Map parsed_request = this.jsonParser().parseJson(request_data);
+
+                // process the parsed request and create the response
+                HashMap<String,Object> response_map = this.processEvent(parsed_request);
+
+                // send the response
+                this.sendResponse(response,(String)response_map.get("content-type"),(HashMap<String,String>)response_map.get("headers"),(String)response_map.get("data"));
+            }
+        }
+        else {
+            // unable to process event due to errors reading the request data
+            this.errorLogger().warning("processEvent: Unable to process request: " + request + " due to errors in reading in the request data... dropping request...");
+            
+            // send an empty response back
+            this.sendResponse(response,"application/json",null,"{}");
+        }
+    }
+    
+    // send the REST response back to mDS
+    private void sendResponse(HttpServletResponse response, String content_type, HashMap<String,String> header, String body) {
+        try {
+            response.setContentType(content_type);
+            response.setHeader("Pragma","no-cache");
+            if (header != null) {
+                for(HashMap.Entry<String,String> entry : header.entrySet()) {
+                    response.addHeader(entry.getKey(),entry.getValue());
+                }
+            }
+            try (PrintWriter out = response.getWriter()) {
+                if (body != null && body.length() > 0) {
+                    out.println(body);
+                }
+            }
+        }
+        catch (Exception ex) {
+            // error - unable to send reply back to mCS
+            this.errorLogger().critical("sendResponse: Unable to send response: " + ex.getMessage(), ex);
+        }
+    }
+    
+    // read in the request data
+    private String readRequestData(HttpServletRequest request) {
+        String data = null;
+        
+        try {
+            BufferedReader reader = request.getReader();
+            String line = reader.readLine();
+            StringBuilder buf = new StringBuilder();
+            while (line != null) {
+                buf.append(line);
+                line = reader.readLine();
+            }
+            data = buf.toString();
+        }
+        catch (IOException ex) {
+            // error in read
+            this.errorLogger().warning("readRequestData: Exception caught during request READ: " + ex.getMessage());
+            data = null;
+        }
+        
+        // return the data
+        return data;
     }
     
     // validate a specific mbed endpoint
@@ -518,7 +802,13 @@ public class mbedClientServiceProcessor extends BaseClass {
     }
     
     // map a single EdgeX resource to its equivalent mbed Resource
-    private String mapEdgeXResourceToMbedResource(String edgex_resource) {
+    public String mapMbedResourcePathToEdgeXResource(String mbed_path) {
+        // return the key whose value is given by our path value
+        return this.getKeyForValue(mbed_path);
+    }
+    
+    // map a single EdgeX resource to its equivalent mbed Resource
+    public String mapEdgeXResourceToMbedResource(String edgex_resource) {
         // use the preference store - key is the EdgeX resoure name... value is the mbed Resource URI (path)
         return this.prefValue(edgex_resource);
     }
@@ -617,6 +907,16 @@ public class mbedClientServiceProcessor extends BaseClass {
         String mbed_id = this.m_db.lookupMbedName(edgex_name);
         if (mbed_id != null) {
             return this.m_db.getMbedDevice(mbed_id);
+        }
+        return null;
+    }
+    
+    // lookup our mbed device shadow for this edgex device
+    public Map mbedDeviceToEdgeXDevice(String mbed_name) {
+        // Get our mbed ID
+        String edgex_name = this.m_db.lookupEdgeXName(mbed_name);
+        if (edgex_name != null) {
+            return this.m_db.getEdgeXDevice(edgex_name);
         }
         return null;
     }

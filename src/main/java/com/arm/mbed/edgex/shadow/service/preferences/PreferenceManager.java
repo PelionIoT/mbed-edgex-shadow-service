@@ -26,6 +26,7 @@ import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Properties;
 
 /**
@@ -100,6 +101,18 @@ public class PreferenceManager extends BaseClass {
 
     public String valueOf(String key) {
         return this.valueOf(key, null);
+    }
+    
+    public String getKeyForValue(String value) {
+        Enumeration e = this.m_config_properties.propertyNames();
+        while (e.hasMoreElements()) {
+            String tmp_key = (String) e.nextElement();
+            String tmp_value = this.m_config_properties.getProperty(tmp_key);
+            if (tmp_value != null && tmp_value.equalsIgnoreCase(value) == true) {
+                return tmp_key;
+            }
+        }
+        return null;
     }
 
     public String valueOf(String key, String suffix) {
