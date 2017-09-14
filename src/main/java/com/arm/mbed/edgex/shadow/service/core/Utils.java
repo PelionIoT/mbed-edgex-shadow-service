@@ -22,6 +22,7 @@
  */
 package com.arm.mbed.edgex.shadow.service.core;
 
+import com.arm.mbed.edgex.shadow.service.json.JSONParser;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -54,6 +55,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.TimeZone;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
@@ -731,6 +733,14 @@ public class Utils {
         return data;
     }
     
+    // hack to remove empty arrays from JSON and replace them with a string
+    public static String removeEmptyArray(String json,String tmp_str) {
+        if (json != null) {
+            return json.replaceAll(":\\[\\]",":\"" + tmp_str + "\"");
+        }
+        return null;
+    }
+    
     // hack to remove the array entry construct from our crappy JSON parser
     public static String removeArray(String json) {
         if (json != null && json.length() > 0) {
@@ -742,5 +752,32 @@ public class Utils {
             return fmt_json;
         }
         return json;
+    }
+    
+    // get a specific (String)element from a JSON payload
+    public static String getStringElementFromJSON(ErrorLogger logger,JSONParser parser,String json_str,String key) {
+        String value = null;
+        
+        try {
+            Map parsed = parser.parseJson(json_str);
+            if (parsed != null) {
+                value = (String)parsed.get(key);
+            }
+        }
+        catch (Exception ex) {
+            // parsing failure
+            logger.warning("Utils.getStringElementFromJSON: Unable to parse input JSON: " + json_str + " key: " + key + " message: " + ex.getMessage(),ex);
+        }
+        
+        
+        // return the value
+        return value;
+    }
+    
+    // create a random number (9 digits)
+    public static long createRandomNumber() {
+        Random rnd = new Random();
+        long n = Math.abs(1000000000 + rnd.nextLong());
+        return n;
     }
 }

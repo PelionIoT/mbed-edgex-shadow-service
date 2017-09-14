@@ -25,8 +25,8 @@ package com.arm.edgex.shadow.service.db;
 import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
+import com.arm.mbed.edgex.shadow.service.interfaces.mbedClientServiceProcessorInterface;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
-import com.arm.mbed.edgex.shadow.service.processors.mbedClientServiceProcessor;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -45,6 +45,7 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     private static String EDGEX_CACHE = "edgex_devices.ser";
     private static String ID_MAP_CACHE = "id_map.ser";
     private static String MBED_CACHE = "mbed_devices.ser";
+    private static String CLOUD_CERT_CACHE = "mbed_cloud_cert.ser";
     
     // enable/disable cache
     private boolean m_disable_cache = true;
@@ -53,6 +54,7 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     private HashMap<String,String> m_id_map_db = null;
     private HashMap<String,String> m_edgex_db = null;
     private HashMap<String,String> m_mbed_db = null;
+    private HashMap<String,String> m_mbed_cert = null;
     
     // default constructor
     public mbedDeviceShadowDatabase(ErrorLogger error_logger, PreferenceManager preference_manager) {
@@ -74,6 +76,10 @@ public class mbedDeviceShadowDatabase extends BaseClass {
             // delete the ID mapping file
             f = new File(ID_MAP_CACHE);
             f.delete();
+            
+            // delete the mbed Cloud Cert file
+            f = new File(CLOUD_CERT_CACHE);
+            f.delete();
         }
         catch (Exception ex) {
             // silent exception
@@ -81,7 +87,7 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     }
     
     // initialize the database
-    public boolean initialize(mbedClientServiceProcessor processor) {
+    public boolean initialize(mbedClientServiceProcessorInterface processor) {
         boolean status = false;
         
         // reload edgex data from the file cache
@@ -104,8 +110,59 @@ public class mbedDeviceShadowDatabase extends BaseClass {
         // write to cache to re-sync
         status = this.saveToCache();
         
+        // also attempt to restore our cached certificate
+        this.getCloudCert();
+        
         // return our status
         return status;
+    }
+    
+    // save the cert to cache if present
+    public void saveCloudCert() {
+        // write the cert to cache too...
+        if (this.m_mbed_cert != null && this.m_mbed_cert.containsKey("certificate") == true) {
+            boolean cert_cached = this.saveToCache(CLOUD_CERT_CACHE, this.m_mbed_cert);
+            if (cert_cached == true) {
+                // success
+                this.errorLogger().info("saveCloudCert: mbed Cloud Device Certificate CACHED successfully");
+            }
+            else {
+                // failure
+                this.errorLogger().warning("saveCloudCert: mbed Cloud Device Certificate NOT CACHED due to errors");
+            }
+        }
+    }
+    // set the cloud cert
+    public void setCloudCert(String certificate_json) {
+        if (this.m_mbed_cert == null) {
+            this.m_mbed_cert = new HashMap<>();
+        }
+        
+        if (this.m_mbed_cert != null) {
+            this.m_mbed_cert.put("certificate",certificate_json);
+        }
+    }
+    
+    // get the cloud cert
+    public String getCloudCert() {
+        // see if we need to reload from cache
+        if (this.m_mbed_cert == null || this.m_mbed_cert.containsKey("certificate") == false) {
+            // reload from cache
+            this.m_mbed_cert = this.reloadFromCache(CLOUD_CERT_CACHE);
+        }
+        
+        if (this.m_mbed_cert != null) {
+            return this.m_mbed_cert.get("certificate");
+        }
+        
+        return null;
+    }
+    
+    // clear cloud certificate
+    public void clearCloudCert() {
+        if (this.m_mbed_cert != null) {
+            this.m_mbed_cert.clear();
+        }
     }
     
     // add a new device
@@ -303,7 +360,7 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     }
     
     // validate and prune stale entries
-    private void validateAndPrune(mbedClientServiceProcessor processor) {
+    private void validateAndPrune(mbedClientServiceProcessorInterface processor) {
         // iterate over the db and validate each...
         for (HashMap.Entry mbed_device : this.m_id_map_db.entrySet()) {
             // get the ith entry...
