@@ -100,6 +100,12 @@ public class mbedClientServiceProcessorForCloud extends mbedClientServiceProcess
         // build out the create device JSON 
         request.put("credentialId",(String)mbed_device.get("credentialId"));
         
+        // handle EPT if present
+        String ept = (String)mbed_device.get("ept");
+        if (ept != null && ept.length() > 0) {
+            request.put("type",ept);
+        }
+        
         // Convert to JSON string
         return Utils.removeArray(this.jsonGenerator().generateJson(request));
     }
