@@ -157,7 +157,7 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
         
         // XXXX
         String url = ""; // this.createMCSDevicesURL() + "/" + mbed_id;
-        String response = this.m_http.httpGet(url);
+        String response = "";  // this.m_http.httpGet(url);
 
         // analyze results
         if (this.m_http.getLastResponseCode() < 300) {
