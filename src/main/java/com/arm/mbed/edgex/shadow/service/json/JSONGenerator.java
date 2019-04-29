@@ -1,5 +1,5 @@
 /**
- * @file    JSONGenerator.java
+ * @file JSONGenerator.java
  * @brief JSON Generator wrapper class
  * @author Doug Anson
  * @version 1.0
@@ -22,8 +22,13 @@
  */
 package com.arm.mbed.edgex.shadow.service.json;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+
 /**
- *
+ * JSON Generator wrapper class
  * @author Doug Anson
  */
 public class JSONGenerator {
@@ -32,8 +37,25 @@ public class JSONGenerator {
     public JSONGenerator() {
     }
 
-    // create JSON
-    public String generateJson(Object json) {
-        return com.codesnippets4all.json.generators.JsonGeneratorFactory.getInstance().newJsonGenerator().generateJson(json);
+    // create JSON (Map)
+    public String generateJson(Map json) {
+        try {
+            return new ObjectMapper().writeValueAsString(json);
+        }
+        catch (JsonProcessingException ex) {
+            // silent
+        }
+        return null;
+    }
+    
+    // create JSON (List)
+    public String generateJson(List json) {
+        try {
+            return new ObjectMapper().writeValueAsString(json);
+        }
+        catch (JsonProcessingException ex) {
+            // silent
+        }
+        return null;
     }
 }

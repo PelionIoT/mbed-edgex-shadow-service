@@ -780,4 +780,40 @@ public class Utils {
         long n = Math.abs(1000000000 + rnd.nextLong());
         return n;
     }
+    
+    // wait a bit
+    public static void waitForABit(ErrorLogger logger, long wait_time_ms) {
+        try {
+            Thread.sleep(wait_time_ms);
+        }
+        catch (InterruptedException ex) {
+            if (logger != null) {
+                logger.info("waitForABit: sleep interrupted: " + ex.getMessage() + " callstack: ",ex);
+            }
+        }
+    }
+    
+     // Gather the JVM memory stats
+    public static Map gatherMemoryStatistics(ErrorLogger logger) {
+        HashMap<String,Object> map = new HashMap<>();
+        long zero = 0;
+        map.put("total",(Long)zero);
+        map.put("free",(Long)zero);
+        map.put("used",(Long)zero);
+        map.put("max",(Long)zero);
+        map.put("processors",(Integer)0);
+        try {
+            Runtime rt = Runtime.getRuntime();
+            map.put("total",(Long)rt.totalMemory()/1024/1024);
+            map.put("free",(Long)rt.freeMemory()/1024/1024);
+            map.put("used",(Long)(rt.totalMemory() - rt.freeMemory())/1024/1024);
+            map.put("max",(Long)rt.maxMemory()/1024/1024);
+            map.put("processors",(Integer)rt.availableProcessors());
+        }
+        catch (Exception ex) {
+            logger.warning("gatherMemoryStatistics: Exception occured: " + ex.getMessage());
+            
+        }
+        return map;
+    }
 }

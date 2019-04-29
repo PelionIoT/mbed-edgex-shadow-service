@@ -1,11 +1,11 @@
 /**
- * @file    ErrorLogger.java
+ * @file ErrorLogger.java
  * @brief error logging facility
  * @author Doug Anson
  * @version 1.0
  * @see
  *
- * Copyright 2015. ARM Ltd. All rights reserved.
+ * Copyright 2018. ARM Ltd. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,64 +22,73 @@
  */
 package com.arm.mbed.edgex.shadow.service.core;
 
+import com.arm.mbed.edgex.shadow.service.loggerservlet.LoggerTracker;
+import com.arm.mbed.edgex.shadow.service.orchestrator.Orchestrator;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Error Handler
+ * Error Logger - log bridge messages to the appropriate logging facility
  *
  * @author Doug Anson
  */
 public class ErrorLogger extends BaseClass {
+    // We can add other SLF4J hooks here... need to also integrate in logit() method... 
+    
+    // SLF4J stdio logging instance
+    private Logger m_slf4j_stdio_logging_instance = null;
+    private boolean m_enable_slf4j_stdio_loggin_instance = true;   // true: enabled. false: use System.out/err
+    
+    // send logs over websocket service within bridge
+    private boolean m_enable_logger_tracker = true;                // true: enabled. false: disabled
+    private LoggerTracker m_logger_tracker_instance = null;      
 
-    // Default message
     /**
-     *
+     * default message
      */
     public static final String DEFAULT_MESSAGE = "<No Message-OK>";
 
-    // Logging classifications
     /**
-     *
+     * Informational message
      */
     public static final int INFO = 0x0001;     // informational
 
     /**
-     *
+     * Warning message
      */
     public static final int WARNING = 0x0002;     // warning
 
     /**
-     *
+     * Critical message
      */
     public static final int CRITICAL = 0x0004;     // critical error
 
-    // masks
     /**
-     *
+     * masks
      */
     public static final int SHOW_ALL = 0x00FF;     // show all
 
     /**
-     *
+     * show info only
      */
     public static final int SHOW_INFO = 0x0001;     // show INFO only
 
     /**
-     *
+     * show warnings only
      */
     public static final int SHOW_WARNING = 0x0002;     // show WARNING only
 
     /**
-     *
+     * show critical errors only
      */
     public static final int SHOW_CRITICAL = 0x0004;     // show CRITICAL only
 
-    // maxmium number of tracked log entries
     /**
-     *
+     * maxmium number of tracked log entries
      */
     public static final int MAX_LOG_ENTRIES = 500;      // reset the list after retaining this many entries
 
@@ -88,37 +97,62 @@ public class ErrorLogger extends BaseClass {
     private int m_level = 0;                            // error classification level
     private int m_mask = SHOW_ALL;                      // default error classification mask
     private volatile ArrayList<String> m_log = null;    // error log
+    private Object m_parent = null;                     // our parent object
+    private String m_bridge_error_level = null;         // our preference
 
     /**
      * constructor
      */
     public ErrorLogger() {
         super(null, null);
+        this.m_parent = null;
         this.m_message = ErrorLogger.DEFAULT_MESSAGE;
         this.m_exception = null;
         this.m_level = ErrorLogger.INFO;
         this.m_mask = ErrorLogger.SHOW_ALL;
         this.m_log = new ArrayList<>();
+        this.m_bridge_error_level = null;
+        
+        if (this.m_enable_slf4j_stdio_loggin_instance == true) {
+            this.m_slf4j_stdio_logging_instance = LoggerFactory.getLogger(this.getClass().getName());
+        }
+        
+        if (this.m_enable_logger_tracker == true) {
+            this.m_logger_tracker_instance = LoggerTracker.getInstance();
+        }
+    }
+    
+    // set the parent
+    public void setParent(Object parent) {
+        this.m_parent = parent;
+    }
+    
+    // get the parent
+    public Object getParent() {
+        return this.m_parent;
     }
 
     /*
-    * Configure the logging level
+     * Configure the logging level
      */
     public void configureLoggingLevel(PreferenceManager preferences) {
-        String config = preferences.valueOf("error_level", null);
-        if (config != null && config.length() > 0) {
-            int mask = 0;
-            if (config.contains("info")) {
-                mask |= ErrorLogger.SHOW_INFO;
+        if (this.m_bridge_error_level == null) {
+            // get once only...
+            this.m_bridge_error_level = preferences.valueOf("mds_bridge_error_level", null);
+        }
+        if (this.m_bridge_error_level != null && this.m_bridge_error_level.length() > 0) {
+            int mask = 0; // init mask
+            if (this.m_bridge_error_level.contains("all")) {
+                mask = ErrorLogger.SHOW_ALL;
             }
-            if (config.contains("warning")) {
-                mask |= ErrorLogger.SHOW_WARNING;
-            }
-            if (config.contains("critical")) {
+            if (this.m_bridge_error_level.contains("critical")) {
                 mask |= ErrorLogger.SHOW_CRITICAL;
             }
-            if (config.contains("all")) {
-                mask = ErrorLogger.SHOW_ALL;
+            if (this.m_bridge_error_level.contains("warning")) {
+                mask |= ErrorLogger.SHOW_WARNING;
+            }
+            if (this.m_bridge_error_level.contains("info")) {
+                mask |= ErrorLogger.SHOW_INFO;
             }
             this.setLoggingMask(mask);
         }
@@ -138,6 +172,16 @@ public class ErrorLogger extends BaseClass {
             this.m_log.add(entry);
         }
     }
+    
+    // Ping(): tracer for call path debugging
+    public void ping() {
+        this.ping("PING");
+    }
+    
+    public void ping(String message) {
+        Exception ex = new Exception ("PingException");
+        this.warning(message + " Exception: " + ex.getMessage(),ex);
+    }
 
     /**
      * log entry - messages only
@@ -149,7 +193,7 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     *
+     * warning message
      * @param message
      */
     public void warning(String message) {
@@ -157,7 +201,7 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     *
+     * critical message
      * @param message
      */
     public void critical(String message) {
@@ -165,7 +209,7 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     * log entry - messages and exceptions
+     * info message
      *
      * @param message
      * @param ex
@@ -175,7 +219,8 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     *
+     * warning message with exception
+     * 
      * @param message
      * @param ex
      */
@@ -184,7 +229,8 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     *
+     * critical message with exception
+     * 
      * @param message
      * @param ex
      */
@@ -193,7 +239,7 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     * log entry - exceptions only
+     * info exception
      *
      * @param ex
      */
@@ -202,7 +248,8 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     *
+     * warning exception
+     * 
      * @param ex
      */
     public void warning(Exception ex) {
@@ -210,7 +257,8 @@ public class ErrorLogger extends BaseClass {
     }
 
     /**
-     *
+     * critical exception
+     * 
      * @param ex
      */
     public void critical(Exception ex) {
@@ -232,45 +280,87 @@ public class ErrorLogger extends BaseClass {
             if (this.m_exception != null) {
                 if (this.m_message != null) {
                     // log the message
-                    System.out.println(this.prettyLevel() + this.m_message + " Exception: " + this.m_exception + ".\n\nStackTrace: " + this.stackTraceToString(this.m_exception));
+                    this.logit(this.prettyLevel() + this.m_message + " Exception: " + this.m_exception + ".\n\nStackTrace: " + this.stackTraceToString(this.m_exception));
                     this.buffer(this.m_message + " Exception: " + this.m_exception + ".\n\nStackTrace: " + this.stackTraceToString(this.m_exception));
                 }
                 else {
                     // log the exception
-                    System.out.println(this.prettyLevel() + this.m_exception);
+                    this.logit(this.prettyLevel() + this.m_exception);
                     this.buffer("" + this.m_exception);
-                    System.out.println(this.prettyLevel() + this.stackTraceToString(this.m_exception));
+                    this.logit(this.prettyLevel() + this.stackTraceToString(this.m_exception));
                 }
             }
+            
             // log what we have
             else if (this.m_message != null) {
                 // log the message
-                System.out.println(this.prettyLevel() + this.m_message);
+                this.logit(this.prettyLevel() + this.m_message);
                 this.buffer(this.m_message);
             }
+            
+            // catch all
             else {
                 // no message
                 this.m_message = "UNKNOWN ERROR";
 
                 // log the message
-                System.out.println(this.prettyLevel() + this.m_message);
+                this.logit(this.prettyLevel() + this.m_message);
                 this.buffer(this.m_message);
+            }
+        }
+    }
+    
+    // log it
+    private void logit(String message) {
+        if (message != null) {
+            // Websocket logger integration... check if enabled...
+            if (this.m_enable_logger_tracker == true && this.m_logger_tracker_instance != null) {
+                // write to the logger instance
+                this.m_logger_tracker_instance.write(message);
+            }
+
+            // no need to emit the health stats as logging data... it will be consumed otherwise
+            if (message.contains(Orchestrator.HEALTH_STATS_KEY) == false) {
+                // SLF4J integration... check if enabled...
+                if (this.m_enable_slf4j_stdio_loggin_instance == true && this.m_slf4j_stdio_logging_instance != null) {        
+                    // Dump to SLF4J instance
+                    this.m_slf4j_stdio_logging_instance.info(message);
+                }
+                else {
+                    // Dump to stdout
+                    System.out.println(message);
+                }
             }
         }
     }
 
     // pretty display of logging level
     private String prettyLevel() {
-        if (this.m_level == ErrorLogger.INFO) {
-            return "INFO: ";
+        if (this.m_enable_slf4j_stdio_loggin_instance == true && this.m_slf4j_stdio_logging_instance != null) {
+            if (this.m_level == ErrorLogger.INFO) {
+                return "(info): ";
+            }
+            if (this.m_level == ErrorLogger.WARNING) {
+                return "(warning): ";
+            }
+            if (this.m_level == ErrorLogger.CRITICAL) {
+                return "(critical): ";
+            }
+            return "";
         }
-        if (this.m_level == ErrorLogger.WARNING) {
-            return "WARN: ";
+        else {
+            // we have to handle tags
+            if (this.m_level == ErrorLogger.INFO) {
+                return "INFO: ";
+            }
+            if (this.m_level == ErrorLogger.WARNING) {
+                return "WARN: ";
+            }
+            if (this.m_level == ErrorLogger.CRITICAL) {
+                return "CRIT: ";
+            }
+            return "UNK: ";
         }
-        if (this.m_level == ErrorLogger.CRITICAL) {
-            return "CRIT: ";
-        }
-        return "UNK: ";
     }
 
     // convert a stack trace to a string

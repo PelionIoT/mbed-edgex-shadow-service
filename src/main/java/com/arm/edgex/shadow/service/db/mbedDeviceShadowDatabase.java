@@ -25,7 +25,6 @@ package com.arm.edgex.shadow.service.db;
 import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
-import com.arm.mbed.edgex.shadow.service.interfaces.mbedClientServiceProcessorInterface;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +34,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import com.arm.mbed.edgex.shadow.service.interfaces.mbedShadowProcessorInterface;
 
 /**
  * mbed Device Shadow Database
@@ -87,7 +87,7 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     }
     
     // initialize the database
-    public boolean initialize(mbedClientServiceProcessorInterface processor) {
+    public boolean initialize(mbedShadowProcessorInterface processor) {
         boolean status = false;
         
         // reload edgex data from the file cache
@@ -360,7 +360,7 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     }
     
     // validate and prune stale entries
-    private void validateAndPrune(mbedClientServiceProcessorInterface processor) {
+    private void validateAndPrune(mbedShadowProcessorInterface processor) {
         // iterate over the db and validate each...
         for (HashMap.Entry mbed_device : this.m_id_map_db.entrySet()) {
             // get the ith entry...

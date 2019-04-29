@@ -24,14 +24,11 @@ package com.arm.mbed.edgex.shadow.service.servlet;
 
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
+import com.arm.mbed.edgex.shadow.service.interfaces.mbedShadowProcessorInterface;
+import com.arm.mbed.edgex.shadow.service.orchestrator.Orchestrator;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
-import com.arm.mbed.edgex.shadow.service.processors.EdgeXEventProcessor;
-import com.arm.mbed.edgex.shadow.service.processors.mbedClientServiceProcessor;
-import java.io.IOException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import com.arm.mbed.edgex.shadow.service.processors.edgecore.mbedEdgeCoreServiceProcessor;
+import com.arm.mbed.edgex.shadow.service.processors.edgex.EdgeXServiceProcessor;
 
 /**
  * Main Servlet Manager
@@ -39,71 +36,35 @@ import javax.servlet.http.HttpServletResponse;
  * @author Doug Anson
  */
 public final class Manager {
-    private HttpServlet m_servlet = null;
-    private EdgeXEventProcessor m_event_processor = null;
-    private mbedClientServiceProcessor m_mcs = null;
-    private static volatile Manager m_manager = null;
+    private Orchestrator m_orchestrator = null;
     private ErrorLogger m_error_logger = null;
     private PreferenceManager m_preference_manager = null;
 
-    // instance factory
-    public static Manager getInstance(HttpServlet servlet,String own_ip_address,int own_port) {
-        if (Manager.m_manager == null) {
-            Manager.m_manager = new Manager(new ErrorLogger(),own_ip_address,own_port);
-        }
-        Manager.m_manager.setServlet(servlet);
-        return Manager.m_manager;
-    }
-
     // default constructor
     @SuppressWarnings("empty-statement")
-    public Manager(ErrorLogger error_logger,String own_ip_address,int own_port) {
+    public Manager(ErrorLogger error_logger,PreferenceManager preferences) {
         // save the error handler
         this.m_error_logger = error_logger;
-        this.m_preference_manager = new PreferenceManager(this.m_error_logger);
+        this.m_preference_manager = preferences;
 
         // announce our self
-        this.errorLogger().info("mbed EdgeX Shadow Service: Date: " + Utils.dateToString(Utils.now()));
+        this.errorLogger().warning("mbed EdgeX Shadow Service: Date: " + Utils.dateToString(Utils.now()));
 
         // configure the error logger logging level
         this.m_error_logger.configureLoggingLevel(this.m_preference_manager);
         
-        // create the mCS Processor
-        this.m_mcs = new mbedClientServiceProcessor(this.m_error_logger,this.m_preference_manager,own_ip_address,own_port);
+        // create the orchestrator
+        this.m_orchestrator = new Orchestrator(this.m_error_logger,this.m_preference_manager);
+        
+        // create the mbed shadow service Processor
+        mbedShadowProcessorInterface msp = new mbedEdgeCoreServiceProcessor(this.m_error_logger,this.m_preference_manager);
         
         // add our EdgeX event processor
-        this.m_event_processor = new EdgeXEventProcessor(this.m_error_logger,this.m_preference_manager,this.m_mcs);
-    }
-    
-    // initialize the manager instance...
-    public boolean initialize() {
-        // initialize the mCS event processor
-       if (this.m_mcs.initialize()) {
-            return this.m_event_processor.initialize();
-       }
-        return false;
-    }
-    
-    // closedown the manager instance
-    public void closedown() {
-        this.m_mcs.closedown();
-        this.m_event_processor.closedown();
-    }
-
-    // process events
-    public void processEvent(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // let the mCS processor process the REST event
-        this.m_mcs.processEvent(request, response);
-    }
-   
-    // set the servlet
-    private void setServlet(HttpServlet servlet) {
-        this.m_servlet = servlet;
-    }
-
-    // get the servlet instance
-    public HttpServlet getServlet() {
-        return this.m_servlet;
+        EdgeXServiceProcessor edgex = new EdgeXServiceProcessor(this.m_error_logger,this.m_preference_manager,msp);
+        
+        // bind in orchestrator
+        this.m_orchestrator.setMbedEdgeCoreServiceProcessor(msp);
+        this.m_orchestrator.setEdgeXServiceProcessor(edgex);
     }
 
     // get the error logger
@@ -114,5 +75,20 @@ public final class Manager {
     // get the preferences db instance
     public final PreferenceManager preferences() {
         return this.m_preference_manager;
+    }
+    
+    // initialize
+    public boolean initialize() {
+       return this.m_orchestrator.initialize();
+    }
+    
+    // closedown
+    public void closedown() {
+        this.m_orchestrator.closedown();
+    }
+    
+    // run loop
+    public void iterate() {
+        this.m_orchestrator.iterate();
     }
 }

@@ -1,5 +1,5 @@
 /**
- * @file    JSONParser.java
+ * @file JSONParser.java
  * @brief JSON Parser wrapper class
  * @author Doug Anson
  * @version 1.0
@@ -22,10 +22,14 @@
  */
 package com.arm.mbed.edgex.shadow.service.json;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * JSON Parser wrapper class
  * @author Doug Anson
  */
 public class JSONParser {
@@ -34,8 +38,29 @@ public class JSONParser {
     public JSONParser() {
     }
 
-    // parse JSON into Map/List 
+    // parse JSON into Map 
     public Map parseJson(String json) {
-        return com.codesnippets4all.json.parsers.JsonParserFactory.getInstance().newJsonParser().parseJson(json);
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> jsonMap = objectMapper.readValue(json,new TypeReference<Map<String,Object>>(){});
+            return jsonMap;
+        }
+        catch(IOException ex) {
+            // silent
+        }
+        return null;
+    }
+    
+    // parse JSON into Array (List) 
+    public List parseJsonToArray(String json) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Map<String, Object>> jsonMap = objectMapper.readValue(json,new TypeReference<List<Map<String, Object>>>(){});
+            return jsonMap;
+        }
+        catch(IOException ex) {
+            // silent
+        }
+        return null;
     }
 }
