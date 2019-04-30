@@ -24,7 +24,6 @@ package com.arm.mbed.edgex.shadow.service.orchestrator;
 
 import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
-import com.arm.mbed.edgex.shadow.service.core.Utils;
 import com.arm.mbed.edgex.shadow.service.health.HealthCheckServiceProvider;
 import com.arm.mbed.edgex.shadow.service.health.interfaces.HealthStatisticListenerInterface;
 import com.arm.mbed.edgex.shadow.service.interfaces.mbedShadowProcessorInterface;
@@ -177,7 +176,7 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
        this.errorLogger().critical(HEALTH_STATS_KEY + json);
        
        // note in log so that log moves...
-       this.errorLogger().warning("Health Stats: Updated (OK).");
+       this.errorLogger().info("Health Stats: Updated (OK).");
     }
     
     // get the active thread count
@@ -208,7 +207,7 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
     // run loop
     public void iterate() {
         // DEBUG
-        this.errorLogger().warning("Orchestrator: Heartbeat (OK).");
+        this.errorLogger().info("Orchestrator: Heartbeat (OK).");
         
         // refresh the stats
         this.refreshHealthStats();
