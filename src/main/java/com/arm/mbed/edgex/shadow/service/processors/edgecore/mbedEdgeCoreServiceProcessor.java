@@ -27,24 +27,20 @@ import com.arm.mbed.edge.core.client.MbedEdgeCoreClient;
 import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
+import com.arm.mbed.edgex.shadow.service.interfaces.DeviceResourceManagerInterface;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
 import com.arm.mbed.edgex.shadow.service.processors.edgex.EdgeXServiceProcessor;
-import java.io.IOException;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import com.arm.mbed.edgex.shadow.service.interfaces.mbedShadowProcessorInterface;
-import java.io.BufferedReader;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import com.arm.mbed.edgex.shadow.service.interfaces.DeviceShadowProcessorInterface;
 
 /**
  * mbed Edge Core Service Processor
  * @author Doug Anson
  */
-public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShadowProcessorInterface {
+public class mbedEdgeCoreServiceProcessor extends BaseClass implements DeviceShadowProcessorInterface, DeviceResourceManagerInterface {
     // EdgeX Service processor
     private EdgeXServiceProcessor m_edgex = null;
     
@@ -67,42 +63,101 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
         // get the default endpoint type for shadow devices
         this.m_default_shadow_ept = preference_manager.valueOf("mbed_default_ept");
         
-        // create the client API
-        this.m_api = new MbedEdgeCoreClient(error_logger,preference_manager);
+        // create the mbed edge core client API
+        this.m_api = new MbedEdgeCoreClient(error_logger,preference_manager,this);
         
         // announce
         this.errorLogger().warning("mbedEdgeCoreServiceProcessor installed. Date: " + Utils.dateToString(Utils.now()));
     }
 
-    // XXX
     @Override
     public boolean initialize() {
         this.errorLogger().info("mbedEdgeCoreServiceProcessor: in initialize()...");
-        
-        // XXX
-        this.m_api.initialize(this);
         return this.m_db.initialize(this);
     }
     
-     // XXX send an observation to the device shadow...
+    // create the device shadow
+    private Map createShadow(Map mbed_device) {
+        // create the device shadow in pelion
+        boolean created = this.m_api.createDevice(mbed_device);
+        if (created == true) {
+            this.errorLogger().info("mbedEdgeCoreServiceProcessor: Created Pelion device: " + mbed_device);
+            
+            // return the created device
+            return mbed_device;
+        }
+        else {
+            this.errorLogger().warning("mbedEdgeCoreServiceProcessor: ERROR creating Pelion device: " + mbed_device);
+            return null;
+        }
+    }
+    
+    // remove the device shadow
+    private boolean removeShadow(String mbed_id) {
+        // remove the device shadow in pelion
+        boolean removed = this.m_api.deleteDevice(mbed_id);
+        if (removed == true) {
+            this.errorLogger().info("mbedEdgeCoreServiceProcessor: Removed Pelion device:" + mbed_id);
+        }
+        else {
+            this.errorLogger().warning("mbedEdgeCoreServiceProcessor: ERROR removing Pelion device: " + mbed_id);
+        }
+        return removed;
+    }
+    
+    // send an observation to the device shadow...
     @Override
     public boolean sendObservation(Map edgex_message) {
+        boolean sent = false;
+        
         // DEBUG
         this.errorLogger().info("mbedEdgeCoreServiceProcessor: in sendObservation()... MAP: " + edgex_message);
         
-        // XXXX
-        return true;
+        // XXX parse the edgex_message into mbed device and resource detail
+        String mbed_id = null;
+        String mbed_resource_uri = null;
+        String new_value = "";
+        
+        // now send the observation into pelion if we have all of the data...
+        if (mbed_id != null && mbed_resource_uri != null && new_value != null) {
+            // send the observation to pelion
+            this.m_api.processDeviceObservation(mbed_id, mbed_resource_uri, new_value);
+            sent = true;
+        }
+        else {
+            // error
+            this.errorLogger().warning("mbedEdgeCoreServiceProcessor: Unable to dispatch observation to Pelion (parse error)");
+        }
+
+        // return our send status
+        return sent;
     }
     
-    // XXX create the device shadow
-    private Map createShadow(Map mbed_device) {
-        // DEBUG
-        this.errorLogger().info("in createShadow():  MAP: " + mbed_device);
+    
+    // shadow requests resource value "get"
+    @Override
+    public String getDeviceResource(String mbed_id, String mbed_resource_uri, Object new_value) {        
+        // map the mbed_id to its edgex id
+        Map edgex = this.mbedDeviceToEdgeXDevice(mbed_id);
         
-        // XXXX
+        // map the mbed LWM2M resource URI to the edgex equivalent
+        String edgex_resource_id = this.mapMbedResourcePathToEdgeXResource(mbed_resource_uri);
         
-        // return the created device
-        return mbed_device;
+        // Call the EdgeX processor to process the modification request
+        return this.m_edgex.updateDeviceResourceValue(edgex,edgex_resource_id,new_value);
+    }
+    
+    // shadow requests resource modification/change
+    @Override
+    public String updateDeviceResource(String mbed_id, String mbed_resource_uri, Object new_value) {        
+        // map the mbed_id to its edgex id
+        Map edgex = this.mbedDeviceToEdgeXDevice(mbed_id);
+        
+        // map the mbed LWM2M resource URI to the edgex equivalent
+        String edgex_resource_id = this.mapMbedResourcePathToEdgeXResource(mbed_resource_uri);
+        
+        // Call the EdgeX processor to process the modification request
+        return this.m_edgex.updateDeviceResourceValue(edgex,edgex_resource_id,new_value);
     }
     
     // validate the mbed device via mCS

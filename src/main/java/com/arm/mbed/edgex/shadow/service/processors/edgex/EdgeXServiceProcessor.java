@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import org.fusesource.mqtt.client.QoS;
 import org.fusesource.mqtt.client.Topic;
-import com.arm.mbed.edgex.shadow.service.interfaces.mbedShadowProcessorInterface;
+import com.arm.mbed.edgex.shadow.service.interfaces.DeviceShadowProcessorInterface;
 
 /**
  * EdgeX Service Processor
@@ -46,7 +46,7 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     private String m_mqtt_hostname = null;
     private int m_mqtt_port = 1883;
     private String m_mqtt_event_topic = null;
-    private mbedShadowProcessorInterface m_msp = null;
+    private DeviceShadowProcessorInterface m_msp = null;
     private TransportReceiveThread m_receive = null;
     
     // Configuration
@@ -59,7 +59,7 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     private String m_edgex_value_set_request_uri = null;
 
     // base constructor
-    public EdgeXServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager,mbedShadowProcessorInterface msp) {
+    public EdgeXServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager,DeviceShadowProcessorInterface msp) {
         super(error_logger, preference_manager);
         
         // set our mbed shadow processor
@@ -94,7 +94,7 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     }
     
     // get our mCS processor
-    public mbedShadowProcessorInterface mcsProcessor() {
+    public DeviceShadowProcessorInterface mcsProcessor() {
         return this.m_msp;
     }
     
@@ -129,13 +129,11 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     
     // create the EdgeX resource SET request URL
     private String buildEdgeXResourceValueSetRequestURL(Map edgex_device,String edgex_resource) {
-        // XXX TO DO
         return "http://" + this.m_edgex_ip_address + ":" + this.m_edgex_resource_values_port + this.m_edgex_value_set_request_uri + edgex_resource;
     }
     
     // create the EdgeX resource value request URL
     private String buildEdgeXResourceValueRequestURL(Map edgex_device,String edgex_resource) {
-        // XXX TO DO
         return "http://" + this.m_edgex_ip_address + ":" + this.m_edgex_resource_values_port + this.m_edgex_value_request_uri + edgex_resource;
     }
     
@@ -265,76 +263,41 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
         return edgex_metadata;
     }
     
-    // process an mCS event downstream into EdgeX
-    public String processEvent(Map request) {
+    // get a resources value for a given edgex device
+    public String getDeviceResourceValue(Map edgex_device,String edgex_resource,Object data) {
         HashMap<String,Object> response = new HashMap<>();
         
-        // extract the elements of the request
-        String mbed_endpoint = (String)request.get("endpoint");
-        String mbed_path = (String)request.get("path");
-        String verb = (String)request.get("verb");
-        String data = (String)request.get("data");
-        
-        // forumulate the response
-        response.put("endpoint",mbed_endpoint);
-        response.put("path",mbed_path);
-        response.put("verb",verb);
-        response.put("success",(Boolean)false);
-        
-        // check the extractions
-        if (mbed_endpoint != null && mbed_endpoint.length() > 0 &&
-            mbed_path != null && mbed_path.length() > 0 &&
-            verb != null && verb.length() > 0) {
-            
-            // get the EdgeX mapping to the endpoint and path names
-            Map edgex_device = this.mcsProcessor().mbedDeviceToEdgeXDevice(mbed_endpoint);
-            
-            // get the EdgeX mapping of the mbed resource URI to the EdgeX equivalent
-            String edgex_resource = this.mcsProcessor().mapMbedResourcePathToEdgeXResource(mbed_path);
-            
-            // make sure we have EdgeX equivalents...
-            if (edgex_device != null && edgex_resource != null) {
-                // we do... so we continue - check the CoAP verb now...
-                if (verb.equalsIgnoreCase("get") == true) {
-                    // GET the EdgeX resource value...
-                    String edgex_resource_value = this.getEdgeXResourceValue(edgex_device,edgex_resource);
-                    if (this.m_http.getLastResponseCode() < 300 && edgex_resource_value != null) {
-                        response.put("data",edgex_resource_value);
-                        response.put("success",(Boolean)true);
-                    }
-                    else {
-                        // unable to GET resource value
-                        this.errorLogger().warning("processEvent(EdgeX): Unable to GET resource value for: " + edgex_device.get("name") + " resource: " + edgex_resource + " status: " + this.m_http.getLastResponseCode());
-                    }
-                }
-                if (verb.equalsIgnoreCase("put") == true) {
-                    // PUT the EdgeX resource value...
-                    String put_response = this.setEdgeXResourceValue(edgex_device,edgex_resource,data);
-                    if (this.m_http.getLastResponseCode() < 300) {
-                        response.put("data",put_response);
-                        response.put("success",(Boolean)true);
-                    }
-                    else {
-                        // unable to PUT value to resource
-                        this.errorLogger().warning("processEvent(EdgeX): Unable to PUT EdgeX device: " + edgex_device.get("name") + " resource: " + edgex_resource + " with value: " + data + " status: " + this.m_http.getLastResponseCode());
-                    }
-                }
-                if (verb.equalsIgnoreCase("post") == true) {
-                    // not supported yet...
-                    this.errorLogger().warning("processEvent(EdgeX): POST operation not yet implemented... ignoring. EdgeX device: " + edgex_device.get("name") + " resource: " + edgex_resource); 
-                }
-                if (verb.equalsIgnoreCase("delete") == true) {
-                    // not supported yet...
-                    this.errorLogger().warning("processEvent(EdgeX): DELETE operation not yet implemented... ignoring. EdgeX device: " + edgex_device.get("name") + " resource: " + edgex_resource);
-                }
-            }
-            else {
-                // unable to find the EdgeX device for the given mbed ID 
-                this.errorLogger().warning("processEvent(EdgeX): Unable to find EdgeX device for mbed device ID: " + mbed_endpoint); 
-            }
+        // GET the EdgeX resource value...
+        String edgex_resource_value = this.getEdgeXResourceValue(edgex_device,edgex_resource);
+        if (this.m_http.getLastResponseCode() < 300 && edgex_resource_value != null) {
+            response.put("data",edgex_resource_value);
+            response.put("success",(Boolean)true);
+        }
+        else {
+            // unable to GET resource value
+            this.errorLogger().warning("processEvent(EdgeX): Unable to GET resource value for: " + edgex_device.get("name") + " resource: " + edgex_resource + " status: " + this.m_http.getLastResponseCode());
         }
         
-        // return the formatted response
+        // return the response as a JSON
+        return this.jsonGenerator().generateJson(response);
+    }
+    
+    // update a resources value for a given edgex device
+    public String updateDeviceResourceValue(Map edgex_device,String edgex_resource,Object data) {
+        HashMap<String,Object> response = new HashMap<>();
+        
+        // PUT the EdgeX resource value...
+        String put_response = this.setEdgeXResourceValue(edgex_device,edgex_resource,(String)data);
+        if (this.m_http.getLastResponseCode() < 300) {
+            response.put("data",put_response);
+            response.put("success",(Boolean)true);
+        }
+        else {
+            // unable to PUT value to resource
+            this.errorLogger().warning("processEvent(EdgeX): Unable to PUT EdgeX device: " + edgex_device.get("name") + " resource: " + edgex_resource + " with value: " + data + " status: " + this.m_http.getLastResponseCode());
+        }
+        
+        // return the response as a JSON
         return this.jsonGenerator().generateJson(response);
     }
     

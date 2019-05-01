@@ -26,13 +26,13 @@ import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.health.HealthCheckServiceProvider;
 import com.arm.mbed.edgex.shadow.service.health.interfaces.HealthStatisticListenerInterface;
-import com.arm.mbed.edgex.shadow.service.interfaces.mbedShadowProcessorInterface;
 import com.arm.mbed.edgex.shadow.service.json.JSONGenerator;
 import com.arm.mbed.edgex.shadow.service.json.JSONGeneratorFactory;
 import com.arm.mbed.edgex.shadow.service.json.JSONParser;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
 import com.arm.mbed.edgex.shadow.service.processors.edgex.EdgeXServiceProcessor;
 import java.util.Set;
+import com.arm.mbed.edgex.shadow.service.interfaces.DeviceShadowProcessorInterface;
 
 /**
  * Orchestrator
@@ -48,7 +48,7 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
     // database table delimiter
     private static String DEF_TABLENAME_DELIMITER = "_";
 
-    private mbedShadowProcessorInterface m_msp = null;
+    private DeviceShadowProcessorInterface m_msp = null;
     private EdgeXServiceProcessor m_edgex = null;
     
     // JSON support
@@ -101,12 +101,12 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
     }
     
     // set the edge core service processor
-    public void setMbedEdgeCoreServiceProcessor(mbedShadowProcessorInterface msp) {
+    public void setMbedEdgeCoreServiceProcessor(DeviceShadowProcessorInterface msp) {
         this.m_msp = msp;
     }
     
     // get the edge core service processor
-    public mbedShadowProcessorInterface getMbedEdgeCoreServiceProcessor() {
+    public DeviceShadowProcessorInterface getMbedEdgeCoreServiceProcessor() {
         return m_msp;
     }
     

@@ -24,11 +24,11 @@ package com.arm.mbed.edgex.shadow.service.servlet;
 
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
-import com.arm.mbed.edgex.shadow.service.interfaces.mbedShadowProcessorInterface;
 import com.arm.mbed.edgex.shadow.service.orchestrator.Orchestrator;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
 import com.arm.mbed.edgex.shadow.service.processors.edgecore.mbedEdgeCoreServiceProcessor;
 import com.arm.mbed.edgex.shadow.service.processors.edgex.EdgeXServiceProcessor;
+import com.arm.mbed.edgex.shadow.service.interfaces.DeviceShadowProcessorInterface;
 
 /**
  * Main Servlet Manager
@@ -57,7 +57,7 @@ public final class Manager {
         this.m_orchestrator = new Orchestrator(this.m_error_logger,this.m_preference_manager);
         
         // create the mbed shadow service Processor
-        mbedShadowProcessorInterface msp = new mbedEdgeCoreServiceProcessor(this.m_error_logger,this.m_preference_manager);
+        DeviceShadowProcessorInterface msp = new mbedEdgeCoreServiceProcessor(this.m_error_logger,this.m_preference_manager);
         
         // add our EdgeX event processor
         EdgeXServiceProcessor edgex = new EdgeXServiceProcessor(this.m_error_logger,this.m_preference_manager,msp);
