@@ -51,6 +51,6 @@ public class ShadowCountStatistic extends BaseValidatorClass implements Runnable
         //PelionProcessor p = (PelionProcessor)this.m_provider.getPelionProcessor();
         //return p.orchestrator().getShadowCount();
         // XXXX
-        return 0;
+        return (int)this.m_value;
     }
 }

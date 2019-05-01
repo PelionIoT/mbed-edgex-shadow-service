@@ -80,6 +80,9 @@ public class HealthCheckServiceProvider extends BaseClass implements HealthCheck
         // Thread Count Statistic
         this.m_validator_list.add(new ThreadCountStatistic(this));
         
+        // Mbed Edge Core Service Health Statistic
+        this.m_validator_list.add(new MbedEdgeCoreServiceHealthStatistic(this));
+        
         // JVM Statistics
         this.m_validator_list.add(new MemoryStatistic(this,"total","MB"));
         this.m_validator_list.add(new MemoryStatistic(this,"free","MB"));

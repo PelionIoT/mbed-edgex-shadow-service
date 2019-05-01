@@ -26,6 +26,8 @@ import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
 import com.arm.mbed.edgex.shadow.service.loggerservlet.LoggerWebSocketServlet;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -121,6 +123,15 @@ public class Main implements Runnable {
             new Thread() {
                 @Override
                 public void run() {
+                    // close down the logger service
+                    try {
+                        // stopping the logger service
+                        m_ws_service.stop();
+                    } catch (Exception ex) {
+                         m_logger.warning("Main: Exception closing down websocket server...");
+                    }
+                    
+                    // close down the manager
                     m_logger.warning("Main: Closing down Manager...");
                     m_manager.closedown();
                 }
@@ -131,16 +142,17 @@ public class Main implements Runnable {
             // initialize
             this.initialize();
             
+            // launch our worker thread
+            m_logger.warning("Main: Creating our main worker thread...");
+            Thread t = new Thread(this);
+            t.start();
+            
             // Start the Websocket Service
             m_logger.warning("Main: Starting logger service");
             this.m_ws_service.start();   
             
-            // launch our worker thread
-            Thread t = new Thread(this);
-            t.start();
-
-            // Join
-            m_logger.warning("Main: Starting WS Joining...");
+            // Join to the WS server
+            m_logger.warning("Main: Joining to the logger service...");
             this.m_ws_service.join();
         }
         catch (Exception ex) {

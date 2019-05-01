@@ -1,4 +1,5 @@
 com/arm/mbed/edgex/shadow/service/health/interfaces/HealthCheckServiceInterface.class
+com/arm/mbed/edgex/shadow/service/health/MbedEdgeCoreServiceHealthStatistic.class
 com/arm/mbed/edgex/shadow/service/transport/HttpTransport.class
 com/arm/mbed/edgex/shadow/service/health/BaseValidatorClass.class
 com/arm/mbed/edgex/shadow/service/loggerservlet/LoggerWebSocketServlet.class
@@ -27,7 +28,6 @@ com/arm/mbed/edgex/shadow/service/core/Transport$ReceiveListener.class
 com/arm/mbed/edgex/shadow/service/interfaces/GenericSender.class
 com/arm/mbed/edgex/shadow/service/health/MemoryStatistic.class
 com/arm/mbed/edgex/shadow/service/json/JSONParser.class
-com/arm/mbed/edge/core/MbedEdgeCoreStatusCheck.class
 com/arm/mbed/edgex/shadow/service/servlet/Manager.class
 com/arm/mbed/edgex/shadow/service/core/BaseClass.class
 com/arm/mbed/edgex/shadow/service/core/Transport.class
@@ -35,5 +35,6 @@ com/arm/mbed/edgex/shadow/service/processors/edgex/EdgeXServiceProcessor.class
 com/arm/mbed/edgex/shadow/service/transport/MQTTTransport.class
 com/arm/mbed/edgex/shadow/service/preferences/PreferenceManager.class
 com/arm/mbed/edgex/shadow/service/json/JSONParser$2.class
+com/arm/mbed/edge/core/client/MbedEdgeCoreClient.class
 com/arm/mbed/edgex/shadow/service/health/ThreadCountStatistic.class
 com/arm/mbed/edgex/shadow/service/health/DatabaseValidator.class

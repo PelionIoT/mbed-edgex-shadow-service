@@ -23,6 +23,7 @@
 package com.arm.mbed.edgex.shadow.service.processors.edgecore;
 
 import com.arm.edgex.shadow.service.db.mbedDeviceShadowDatabase;
+import com.arm.mbed.edge.core.client.MbedEdgeCoreClient;
 import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
@@ -47,6 +48,9 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
     // EdgeX Service processor
     private EdgeXServiceProcessor m_edgex = null;
     
+    // Mbed Edge Core Client API 
+    private MbedEdgeCoreClient m_api = null;
+    
     // default EPT
     private String m_default_shadow_ept = null;
 
@@ -62,6 +66,9 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
         
         // get the default endpoint type for shadow devices
         this.m_default_shadow_ept = preference_manager.valueOf("mbed_default_ept");
+        
+        // create the client API
+        this.m_api = new MbedEdgeCoreClient(error_logger,preference_manager);
         
         // announce
         this.errorLogger().warning("mbedEdgeCoreServiceProcessor installed. Date: " + Utils.dateToString(Utils.now()));
@@ -80,7 +87,8 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
     @Override
     public boolean initialize() {
         this.errorLogger().info("mbedEdgeCoreServiceProcessor: in initialize()...");
-         return this.m_db.initialize(this);
+        this.m_api.initialize(this);
+        return this.m_db.initialize(this);
     }
     
     // process an mCS event
@@ -351,15 +359,11 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
        String url = this.m_edgex.buildEdgeXMetadataURL(edgex_dev_name);
 
        // call EdgeX to retrieve the metadata for the device
+       //this.errorLogger().warning("lookupEdgeXDeviceDetails: URL: " + url);
        String edgex_metadata_str = this.m_http.httpGet(url);
 
        // make sure we got something back...
        if (this.m_http.getLastResponseCode() < 300 && edgex_metadata_str != null && edgex_metadata_str.length() > 0) {
-            // remove any empty stuff that our crappy JSON parser cannot handle... ugh...
-            edgex_metadata_str = edgex_metadata_str.replace("\"\"","\" \"");
-            edgex_metadata_str = edgex_metadata_str.replace("[]","null");
-            edgex_metadata_str = edgex_metadata_str.replace("{}","null");
-
             try {
                 // DEBUG
                 //this.errorLogger().info("lookupEdgeXDeviceDetails: EdgeX Metadata: " + edgex_metadata_str);
