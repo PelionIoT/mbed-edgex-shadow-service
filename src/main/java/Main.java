@@ -26,8 +26,6 @@ import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
 import com.arm.mbed.edgex.shadow.service.loggerservlet.LoggerWebSocketServlet;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -53,6 +51,9 @@ public class Main implements Runnable {
     
     // thread count wait time in ms
     private int m_thread_count_check_wait_ms = DEF_THREAD_COUNT_CHECK_WAIT_MS;
+    
+    // health refresh interval in ms..
+    private int m_refresh_health_interval_ms = 11000; // 11 seconds
     
     // Thread count
     private int m_thread_count = 1;   // ourself
@@ -175,12 +176,12 @@ public class Main implements Runnable {
     @Override
     public void run() {
         // DEBUG
-        m_logger.warning("Main: Starting main loop...");
+        m_logger.warning("Main: Starting health refresh loop...");
         
         // worker thread loop
         while(true) {
-            this.m_manager.iterate();
-            Utils.waitForABit(m_logger, 10000);
+            this.m_manager.refreshHealthStats();
+            Utils.waitForABit(m_logger,this.m_refresh_health_interval_ms);
         }
     }
 }

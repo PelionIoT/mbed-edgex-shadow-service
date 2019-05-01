@@ -87,8 +87,8 @@ public final class Manager {
         this.m_orchestrator.closedown();
     }
     
-    // run loop
-    public void iterate() {
-        this.m_orchestrator.iterate();
+    // refresh the health statistics
+    public void refreshHealthStats() {
+        this.m_orchestrator.refreshHealthStats();
     }
 }

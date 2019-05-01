@@ -164,7 +164,7 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
     }
     
     // manual refresh the health stats
-    private void refreshHealthStats() {
+    public void refreshHealthStats() {
         if (this.m_health_check_service_provider != null) {
             this.m_health_check_service_provider.refreshHealthStats();
         }
@@ -202,11 +202,5 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
         }
         
         return this.m_thread_count;
-    }
-    
-    // run loop
-    public void iterate() {
-        // DEBUG
-        this.errorLogger().info("Orchestrator: Heartbeat (OK).");
     }
 }
