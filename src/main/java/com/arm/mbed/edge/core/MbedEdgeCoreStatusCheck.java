@@ -21,6 +21,7 @@ public class MbedEdgeCoreStatusCheck extends BaseClass implements Runnable {
     private boolean m_running = false;
     private boolean m_mbed_edge_running = false;
     private boolean m_mbed_edge_running_last = !this.m_mbed_edge_running;
+    private boolean m_first_run = true;
     
     // primary constructor
     public MbedEdgeCoreStatusCheck(ErrorLogger logger, PreferenceManager preferences,int wait_time_ms) {
@@ -67,12 +68,23 @@ public class MbedEdgeCoreStatusCheck extends BaseClass implements Runnable {
         }
         
         // DEBUG
-        if (this.m_mbed_edge_running_last != this.m_mbed_edge_running) {
+        if (this.m_first_run == true) {
+            this.m_first_run = false;
             if (this.m_mbed_edge_running == true) {
                 this.errorLogger().warning("MbedEdgeCore: Service RUNNING");
             }
             else {
                 this.errorLogger().warning("MbedEdgeCore: Service STOPPED");
+            }
+        }
+        else {
+            if (this.m_mbed_edge_running_last != this.m_mbed_edge_running) {
+                if (this.m_mbed_edge_running == true) {
+                    this.errorLogger().warning("MbedEdgeCore: Service RUNNING");
+                }
+                else {
+                    this.errorLogger().warning("MbedEdgeCore: Service STOPPED");
+                }
             }
         }
         
