@@ -1,4 +1,5 @@
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/mbed/edgex/shadow/service/health/ShadowCountStatistic.java
+/Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/mbed/edge/core/MbedEdgeCoreStatusCheck.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/mbed/edgex/shadow/service/core/BaseClass.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/mbed/edgex/shadow/service/health/HealthCheckServiceProvider.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/mbed/edgex/shadow/service/transport/MQTTMessage.java

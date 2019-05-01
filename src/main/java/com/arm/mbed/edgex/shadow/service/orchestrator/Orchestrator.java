@@ -22,6 +22,7 @@
  */
 package com.arm.mbed.edgex.shadow.service.orchestrator;
 
+import com.arm.mbed.edge.core.MbedEdgeCoreStatusCheck;
 import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.health.HealthCheckServiceProvider;
@@ -66,6 +67,9 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
     
     private int m_thread_count = 0;
     
+    private int m_status_check_interval_ms = 1000;
+    private MbedEdgeCoreStatusCheck m_mbed_core_status_checker = null;
+    
     // primary constructor
     public Orchestrator(ErrorLogger error_logger, PreferenceManager preference_manager) {
         super(error_logger, preference_manager);
@@ -98,6 +102,11 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
             // not enabled
             this.errorLogger().warning("Orchestrator: Stats Checking DISABLED");
         }
+        
+        // intialize the mbed edge core status checker
+        this.m_status_check_interval_ms = 30000;    // 30 seconds
+        this.m_mbed_core_status_checker = new MbedEdgeCoreStatusCheck(error_logger,preference_manager,this.m_status_check_interval_ms);
+        this.m_mbed_core_status_checker.init();
     }
     
     // set the edge core service processor
