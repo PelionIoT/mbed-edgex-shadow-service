@@ -19,7 +19,7 @@ public class MbedEdgeCoreStatusCheck extends BaseClass implements Runnable {
     private Thread m_thread = null;
     private int m_wait_time_ms = 0;
     private boolean m_running = false;
-    private boolean m_mbed_edge_running = true;
+    private boolean m_mbed_edge_running = false;
     private boolean m_mbed_edge_running_last = !this.m_mbed_edge_running;
     
     // primary constructor
