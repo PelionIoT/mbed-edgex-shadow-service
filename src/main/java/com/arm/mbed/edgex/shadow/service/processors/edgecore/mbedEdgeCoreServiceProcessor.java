@@ -73,113 +73,55 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
         // announce
         this.errorLogger().warning("mbedEdgeCoreServiceProcessor installed. Date: " + Utils.dateToString(Utils.now()));
     }
-    
-    @Override
-    public void setEdgeXEventProcessor(EdgeXServiceProcessor edgex) {
-        this.m_edgex = edgex;
-    }
 
-    @Override
-    public EdgeXServiceProcessor edgeXEventProcessor() {
-        return this.m_edgex;
-    }
-
+    // XXX
     @Override
     public boolean initialize() {
         this.errorLogger().info("mbedEdgeCoreServiceProcessor: in initialize()...");
+        
+        // XXX
         this.m_api.initialize(this);
         return this.m_db.initialize(this);
     }
     
-    // process an mCS event
-    private HashMap<String,Object> processEvent(Map request) {
-        HashMap<String,Object> response = new HashMap<>();
-        HashMap<String,String> headers = new HashMap<>();
-
-        // set defaults
-        response.put("content-type", "application/json");
-        response.put("headers",headers);
-        response.put("data", "{}");
-
-        // lets process the event and get any answers back from EdgeX
-        String response_json = this.edgeXEventProcessor().processEvent(request);
-        if (response_json != null && response_json.length() > 0) {
-            response.put("data",response_json);
-        }
-
-        // return the response
-        return response;
-    }
-    
-    // send the REST response back to mDS
-    private void sendResponse(HttpServletResponse response, String content_type, HashMap<String,String> header, String body) {
-        try {
-            response.setContentType(content_type);
-            response.setHeader("Pragma","no-cache");
-            if (header != null) {
-                for(HashMap.Entry<String,String> entry : header.entrySet()) {
-                    response.addHeader(entry.getKey(),entry.getValue());
-                }
-            }
-            try (PrintWriter out = response.getWriter()) {
-                if (body != null && body.length() > 0) {
-                    out.println(body);
-                }
-            }
-        }
-        catch (Exception ex) {
-            // error - unable to send reply back to mCS
-            this.errorLogger().critical("sendResponse: Unable to send response: " + ex.getMessage(), ex);
-        }
-    }
-
-    // read in the request data
-    private String readRequestData(HttpServletRequest request) {
-        String data = null;
-
-        try {
-            BufferedReader reader = request.getReader();
-            String line = reader.readLine();
-            StringBuilder buf = new StringBuilder();
-            while (line != null) {
-                buf.append(line);
-                line = reader.readLine();
-            }
-            data = buf.toString();
-        }
-        catch (IOException ex) {
-            // error in read
-            this.errorLogger().warning("readRequestData: Exception caught during request READ: " + ex.getMessage());
-            data = null;
-        }
-
-        // return the data
-        return data;
-    }
-    
-     // validate the mbed device via mCS
-    private boolean validateMbedDevice(String mbed_id) {
-        boolean validated = false;
-
-        // Lets query mCS and get this device details
+     // XXX send an observation to the device shadow...
+    @Override
+    public boolean sendObservation(Map edgex_message) {
+        // DEBUG
+        this.errorLogger().info("mbedEdgeCoreServiceProcessor: in sendObservation()... MAP: " + edgex_message);
         
         // XXXX
-        String url = ""; // this.createMCSDevicesURL() + "/" + mbed_id;
-        String response = "";  // this.m_http.httpGet(url);
+        return true;
+    }
+    
+    // XXX create the device shadow
+    private Map createShadow(Map mbed_device) {
+        // DEBUG
+        this.errorLogger().info("in createShadow():  MAP: " + mbed_device);
+        
+        // XXXX
+        
+        // return the created device
+        return mbed_device;
+    }
+    
+    // validate the mbed device via mCS
+    private boolean validateMbedDevice(String mbed_id) {
+        boolean exists = false;
 
-        // analyze results
-        if (this.m_http.getLastResponseCode() < 300) {
-            // device exists in mCS
-            this.errorLogger().info("validateMbedDevice: mbed ID: " + mbed_id + " is known to mCS: response: " + response);
-            validated = true;
+        // query pelion via mbed edge 
+        exists = this.m_api.deviceExists(mbed_id);
+        if (exists == true) {
+            // device exists in Pelion
+            this.errorLogger().info("validateMbedDevice: mbed ID: " + mbed_id + " exists in Pelion");
         }
         else {
-            // device does not exist in mCS
-            this.errorLogger().info("validateMbedDevice: mbed ID: " + mbed_id + " is NOT known to mCS: response: " + response);
+            // device does not exist in Pelion
+            this.errorLogger().info("validateMbedDevice: mbed ID: " + mbed_id + " does NOT exist in Pelion");
         }
 
         // return the validation status
-        return validated;
+        return exists;
     }
     
     // validate the EdgeX device in EdgeX
@@ -225,6 +167,9 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
         if (saved == true) {
             // successfully cached mappings
             this.errorLogger().info("mbedEdgeCoreServiceProcessor:closedown: SUCCESS device mapping saved...");
+            
+            // close down the client API
+            this.m_api.closedown();
         }
         else {
             // unable to cache mappings or disabled
@@ -233,12 +178,6 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
             // go ahead and clear the cache
             this.m_db.clearCacheFiles();
         }
-    }
-
-    @Override
-    public boolean sendObservation(Map edgex_message) {
-        this.errorLogger().info("mbedEdgeCoreServiceProcessor: in sendObservation()... MAP: " + edgex_message);
-        return true;
     }
 
     @Override
@@ -273,12 +212,6 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
         mbed_device.put("ept",ept);
 
         // return the mbed device map
-        return mbed_device;
-    }
-    
-    // create the shadow
-    private Map createShadow(Map mbed_device) {
-        this.errorLogger().info("in createShadow():  MAP: " + mbed_device);
         return mbed_device;
     }
 
@@ -471,4 +404,14 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements mbedShado
         }
         return null;
     } 
+    
+    @Override
+    public void setEdgeXEventProcessor(EdgeXServiceProcessor edgex) {
+        this.m_edgex = edgex;
+    }
+
+    @Override
+    public EdgeXServiceProcessor edgeXEventProcessor() {
+        return this.m_edgex;
+    }
 }

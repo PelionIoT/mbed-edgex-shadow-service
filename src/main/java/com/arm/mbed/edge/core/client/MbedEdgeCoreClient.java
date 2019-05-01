@@ -41,6 +41,19 @@ public class MbedEdgeCoreClient extends BaseClass implements Runnable {
     public void initialize(Object parent) {
         
     }
+    
+    // closedown
+    public void closedown() {
+        
+    }
+    
+    // device exists in Pelion?
+    public boolean deviceExists(String id) {
+        boolean exists = true;
+        
+        // return existance
+        return exists;
+    }
 
     // Runnable
     @Override
