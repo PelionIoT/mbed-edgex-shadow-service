@@ -21,12 +21,12 @@
  * limitations under the License.
  *
  */
-import com.arm.mbed.edgex.shadow.service.servlet.Manager;
-import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
-import com.arm.mbed.edgex.shadow.service.core.Utils;
-import com.arm.mbed.edgex.shadow.service.loggerservlet.LoggerWebSocketServlet;
-import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
-import com.arm.mbed.edgex.shadow.service.transport.HttpTransport;
+import com.arm.pelion.shadow.service.servlet.Manager;
+import com.arm.pelion.shadow.service.core.ErrorLogger;
+import com.arm.pelion.shadow.service.core.Utils;
+import com.arm.pelion.shadow.service.loggerservlet.LoggerWebSocketServlet;
+import com.arm.pelion.shadow.service.preferences.PreferenceManager;
+import com.arm.pelion.shadow.service.transport.HttpTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
