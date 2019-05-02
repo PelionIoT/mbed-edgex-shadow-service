@@ -23,7 +23,7 @@
 package com.arm.mbed.edgex.shadow.service.processors.edgecore;
 
 import com.arm.edgex.shadow.service.db.mbedDeviceShadowDatabase;
-import com.arm.mbed.edge.core.client.MbedEdgeCoreClient;
+import com.arm.mbed.edgex.shadow.core.client.MbedEdgeCoreClient;
 import com.arm.mbed.edgex.shadow.service.core.BaseClass;
 import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
@@ -247,6 +247,9 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements DeviceSha
             // we have an entry
             shadowed = true;
         }
+        
+        // DEBUG
+        this.errorLogger().warning("mbedEdgeCoreServiceProcessor: deviceShadowed: DEV: " + mbed_device + " SHADOWED: " + shadowed + " Name: " + edgex_name);
 
         // return our shadow status
         return shadowed;
@@ -306,7 +309,7 @@ public class mbedEdgeCoreServiceProcessor extends BaseClass implements DeviceSha
     public boolean createDeviceShadow(Map edgex_message) {
          boolean created = false;
 
-        // Get the EdgeX ID
+        // Get the EdgeX device name
         String edgex_dev_name = (String)edgex_message.get("device");
 
         // Get the resource information for the EdgeX device

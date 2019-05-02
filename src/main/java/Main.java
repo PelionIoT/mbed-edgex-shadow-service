@@ -26,6 +26,7 @@ import com.arm.mbed.edgex.shadow.service.core.ErrorLogger;
 import com.arm.mbed.edgex.shadow.service.core.Utils;
 import com.arm.mbed.edgex.shadow.service.loggerservlet.LoggerWebSocketServlet;
 import com.arm.mbed.edgex.shadow.service.preferences.PreferenceManager;
+import com.arm.mbed.edgex.shadow.service.transport.HttpTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -60,8 +61,10 @@ public class Main implements Runnable {
     private boolean m_running = false; 
     
     // Preferences and ErrorLogger
-    protected ErrorLogger m_logger = null;
-    protected PreferenceManager m_preferences = null;
+    private ErrorLogger m_logger = null;
+    private PreferenceManager m_preferences = null;
+    private HttpTransport m_http = null;
+    private Thread m_logger_thread = null;
     
     // main entry 
     public static void main(String[] args) throws Exception {
@@ -73,6 +76,10 @@ public class Main implements Runnable {
     public Main(String[] args) {
         m_logger = new ErrorLogger();
         m_preferences = new PreferenceManager(m_logger);
+        m_http = new HttpTransport(m_logger,m_preferences);
+        
+        // note the http handle
+        this.m_preferences.setObjectHandle(m_http);
 
         // configure the error logger logging level
         m_logger.configureLoggingLevel(m_preferences);
@@ -148,13 +155,32 @@ public class Main implements Runnable {
             Thread t = new Thread(this);
             t.start();
             
-            // Start the Websocket Service
-            m_logger.warning("Main: Starting logger service");
-            this.m_ws_service.start();   
+            // start a thread that runs the WS logger service
+            this.m_logger_thread = new Thread() {
+                @Override
+                public void run() {
+                    // setup and run the logger service
+                    try {
+                        // Start the Websocket Service
+                        m_logger.warning("Main: Starting logger service");
+                        m_ws_service.start();   
+                        
+                        // Join to the WS server
+                        m_logger.warning("Main: Dispatching logger service...");
+                        m_ws_service.join();
+                    } 
+                    catch (Exception ex) {
+                         m_logger.warning("Main: Exception closing down websocket server...");
+                    }
+                }
+            };
+            this.m_logger_thread.start();
             
-            // Join to the WS server
-            m_logger.warning("Main: Joining to the logger service...");
-            this.m_ws_service.join();
+            // Wait forever
+            m_logger.warning("Main: Enter main loop...");
+            while(true) {
+                Utils.waitForABit(m_logger, 10000);
+            }
         }
         catch (Exception ex) {
             m_logger.warning("Main: Exception caught while starting thread count updater task: " + ex.getMessage());

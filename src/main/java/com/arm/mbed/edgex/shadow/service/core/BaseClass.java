@@ -38,7 +38,7 @@ public class BaseClass {
     private PreferenceManager m_preference_manager = null;
     private JSONParser m_parser = null;
     private JSONGenerator m_generator = null;
-    private String m_content_type = null;
+    protected String m_content_type = null;
     protected HttpTransport m_http = null;
 
     // constructor
@@ -55,9 +55,9 @@ public class BaseClass {
         if (preference_manager != null) {
             this.m_content_type = preference_manager.valueOf("content_type");
         }
-        
-        // create the HTTP transport
-        this.m_http = new HttpTransport(error_logger,preference_manager);
+        if (preference_manager != null) {
+            this.m_http = (HttpTransport)preference_manager.getObjectHandle();
+        }
     }
     
     // our defaulted content type

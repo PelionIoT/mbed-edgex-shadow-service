@@ -41,6 +41,7 @@ public class PreferenceManager extends BaseClass {
     private static final String PROPERTY_DEFINE = "config_file";      // passed as -Dconfig_file="../conf/service.properties"
     private static final String DEFAULT_PROPERTIES_FILE = "WEB-INF/classes/service.properties";
     private String m_properties_file = null;
+    Object m_obj = null;
 
     private Properties m_config_properties = null;        // DB config properties
 
@@ -48,6 +49,16 @@ public class PreferenceManager extends BaseClass {
         super(error_logger, null);
         this.m_properties_file = DEFAULT_PROPERTIES_FILE;
         this.readPreferencesFile();
+    }
+    
+    // set and object handle 
+    public void setObjectHandle(Object obj) {
+        this.m_obj = obj;
+    }
+    
+    // get the object handle
+    public Object getObjectHandle() {
+        return this.m_obj;
     }
 
     public boolean booleanValueOf(String key) {
