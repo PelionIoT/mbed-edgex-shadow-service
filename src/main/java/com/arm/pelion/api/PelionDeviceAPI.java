@@ -1,11 +1,11 @@
 /**
- * @file MbedEdgeProtocolTranslatorClientAPI.java
- * @brief Mbed edge core protocol translator client API for Java
+ * @file PelionDeviceAPI.java
+ * @brief Pelion client API for Java (container)
  * @author Doug Anson
  * @version 1.0
  * @see
  *
- * Copyright 2015. ARM Ltd. All rights reserved.
+ * Copyright 2019. ARM Ltd. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
 import java.util.Map;
 
 /**
- * Mbed edge core protocol translator client API for Java
+ * Pelion client API for Java (container)
  * @author Doug Anson
  */
 public class PelionDeviceAPI extends BaseClass {

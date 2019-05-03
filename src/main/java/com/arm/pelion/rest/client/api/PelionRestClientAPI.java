@@ -1,11 +1,11 @@
 /**
- * @file PelionClientAPI.java
- * @brief Pelion API Client
+ * @file PelionRestClientAPI.java
+ * @brief Pelion Rest API Client
  * @author Doug Anson
  * @version 1.0
  * @see
  *
- * Copyright 2015. ARM Ltd. All rights reserved.
+ * Copyright 2019. ARM Ltd. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.arm.pelion.shadow.service.preferences.PreferenceManager;
 import java.util.Map;
 
 /**
- * Mbed edge core protocol translator client API for Java
+ * Pelion Rest API Client
  * @author Doug Anson
  */
 public class PelionRestClientAPI extends BaseClass {
