@@ -173,7 +173,7 @@ public class PelionDeviceAPI extends BaseClass {
         if (m_use_edge == true) {
             if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
-                return this.m_edge_api.registerDevice(this.toMbedEdgeCorePTFormat(device));
+                return this.m_edge_api.registerDevice(device);
             }
             return false;  
         }
@@ -202,10 +202,5 @@ public class PelionDeviceAPI extends BaseClass {
             }
             return false;
         }
-    }
-    
-    // convert to the mbed-edge core format
-    private Object[] toMbedEdgeCorePTFormat(Map device) {
-        return null;
     }
 }

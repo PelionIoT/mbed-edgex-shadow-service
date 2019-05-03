@@ -26,9 +26,15 @@ import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.preferences.PreferenceManager;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import org.kurento.jsonrpc.client.JsonRpcClient;
 import org.kurento.jsonrpc.client.JsonRpcClientNettyWebSocket;
+import org.kurento.jsonrpc.message.Request;
+import org.kurento.jsonrpc.message.Response;
 
 /**
  * Pelion edge core protocol translator client API for Java
@@ -106,34 +112,88 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     
     // get device
     public String getDevice(String deviceId) {
-        return this.invokeRPCWithResult("device_details", new Object[] {"deviceId",deviceId});
+        HashMap<String,String> req = new HashMap<>();
+        req.put("deviceId",deviceId);
+        return this.invokeRPCWithResult(this.createRequest("device_details", req));
     }
     
     // unregister device
     public boolean unregisterDevice(String deviceId) {
-        return this.invokeRPC("device_unregister",new Object[] {"deviceId",deviceId});
+        HashMap<String,String> req = new HashMap<>();
+        req.put("deviceId",deviceId);
+        return this.invokeRPC(this.createRequest("device_unregister", req));
     }
     
     // register device
-    public boolean registerDevice(Object[] device) {
-        return this.invokeRPC("device_register",device);
+    public boolean registerDevice(Map device) {
+        HashMap<String,String> req = new HashMap<>();
+        req.put("deviceId",(String)null);
+        return this.invokeRPC(this.createRequest("device_register", req));
     }
     
     // register our API
-    public boolean register() {
-        return this.invokeRPC("protocol_translator_register", new Object[] {"name",this.m_name});
+    public boolean register() {    
+        HashMap<String,String> req = new HashMap<>();
+        req.put("name",this.m_name);
+        String rpc_method_name = "protocol_translator_register";
+        
+        // DEBUG
+        this.errorLogger().warning("PelionEdgeCoreClientAPI: PT Registration: FN: " + rpc_method_name + " PARAM: " + req);
+        
+        // issue the registration request
+        boolean status = this.invokeRPC(this.createRequest(rpc_method_name, req));
+        if (status) {
+            // success
+            this.errorLogger().warning("PelionEdgeCoreClientAPI: PT registration SUCCESS");
+        }
+        else {
+            // failure
+            this.errorLogger().warning("PelionEdgeCoreClientAPI: PT registration FAILURE");
+        }
+        return status;
+    }
+    
+    // create the request object
+    private Request<JsonObject> createRequest(String rpc_method_name,Map params) {
+        // create an RPC request instance
+        Request<JsonObject> request = new Request<>();
+        
+        // set the RPC call method name
+        request.setMethod(rpc_method_name);
+        
+        // allocate params object
+        JsonObject request_params = new JsonObject();
+        
+        // iterate through the map and convert to the request format
+        Iterator it = params.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry entry = (Map.Entry)it.next();
+            request_params.addProperty((String)entry.getKey(),(String)entry.getValue());
+        } 
+        
+        // set the parameters in the request
+        request.setParams(request_params);
+        
+        // return the request
+        return request;
     }
     
     // execute RPC (boolean return)
-    private boolean invokeRPC(String rpc_method_name, Object[] params) {
-        String reply = this.invokeRPCWithResult(rpc_method_name, params);
+    private boolean invokeRPC(Request<JsonObject> request) {
+        String reply = this.invokeRPCWithResult(request);
         if (reply != null) {
+            // DEBUG
+            this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC SUCCESS. REPLY: " + reply);
+            
+            // return success
             return true;
         }
+        
+        // return failure
         return false;
     }
     // execute RPC (with result)
-    private String invokeRPCWithResult(String rpc_method_name, Object[] params) {
+    private String invokeRPCWithResult(Request<JsonObject> request) {
         String reply = null;
         
         try{
@@ -147,22 +207,28 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
             if (this.m_connected) {
                 try {
                     // invoke the RPC with our params
-                    JsonElement response = this.m_client.sendRequest(rpc_method_name,params);
+                    Response<JsonElement> response = this.m_client.sendRequest(request);
                     if (response != null) {
-                        reply = response.getAsString();
+                        try {
+                            reply = response.getResult().getAsString();
+                        }
+                        catch (Exception ex) {
+                            this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC (result parsing) FAILURE: Exception: " + ex.getMessage());
+                            reply = null;
+                        }
                     }
 
                     // DEBUG
-                    this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC SUCCESS: Method: " + rpc_method_name + " Params: " + params + " Reply: " + reply);
+                    this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC SUCCESS: Reply: " + reply);
                 } 
                 catch (IOException ex) {
-                    this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Method: " + rpc_method_name + " Params: " + params + " Exception: " + ex.getMessage());
+                    this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Exception: " + ex.getMessage());
                     reply = null;
                 }
             }
         }
         catch (Exception ex) {
-             this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Method: " + rpc_method_name + " Params: " + params + " Exception: " + ex.getMessage());
+             this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Method: Exception: " + ex.getMessage());
              reply = null;
         }
         return reply;
