@@ -700,8 +700,14 @@ public class HttpTransport extends BaseClass {
             try {
                 // check for non-null connection
                 if (connection != null) {
-                    // save off the HTTPs response code...
-                    this.saveResponseCode(((HttpsURLConnection) connection).getResponseCode());
+                    if (doSSL == true) {
+                        // save off the HTTPS response code...
+                        this.saveResponseCode(((HttpsURLConnection) connection).getResponseCode());
+                    }
+                    else {
+                        // save off the HTTP response code...
+                        this.saveResponseCode(((HttpURLConnection) connection).getResponseCode());
+                    }
                 }
                 else {
                     this.errorLogger().warning("HttpTransport(" + verb + "): ERROR in doHTTP(" + verb + "): Connection is NULL");

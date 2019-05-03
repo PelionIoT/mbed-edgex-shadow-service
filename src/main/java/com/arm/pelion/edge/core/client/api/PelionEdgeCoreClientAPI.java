@@ -25,9 +25,10 @@ package com.arm.pelion.edge.core.client.api;
 import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.preferences.PreferenceManager;
-import com.googlecode.jsonrpc4j.JsonRpcClient;
-import java.net.URI;
-import java.net.URISyntaxException;
+import com.google.gson.JsonElement;
+import java.io.IOException;
+import org.kurento.jsonrpc.client.JsonRpcClient;
+import org.kurento.jsonrpc.client.JsonRpcClientNettyWebSocket;
 
 /**
  * Pelion edge core protocol translator client API for Java
@@ -35,9 +36,14 @@ import java.net.URISyntaxException;
  */
 public class PelionEdgeCoreClientAPI extends BaseClass {    
     // mbed-edge core PT config
-    private URI m_edge_core_ws_uri = null;
+    private String m_edge_core_ws_uri = null;
     private boolean m_connected = false;
     private String m_name = null;
+    
+    // websocket configuration (must have socat in container runtime)
+    // confirm that the port number matches start_instance.sh 
+    private int m_ws_port = 4455;
+    private String m_ws_host = "localhost";
     
     // JSON-RPC/WS 
     private JsonRpcClient m_client = null;
@@ -45,30 +51,34 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     // default constructor
     public PelionEdgeCoreClientAPI(ErrorLogger logger,PreferenceManager preferences) {
         super(logger,preferences);
-        
+      
         // set the URI for our mbed-edge instance
-        try {
-            this.m_edge_core_ws_uri = new URI("ws+unix:///tmp/edge.sock:/1/pt");
-            this.m_name = "edgex";
-        }
-        catch (URISyntaxException ex) {
-            this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception in creation of URI: " + ex.getMessage());
-        }
+        this.m_edge_core_ws_uri = "ws://" + this.m_ws_host + ":" + this.m_ws_port + "/1/pt";
+        this.m_name = "edgex";
+        
+        // Announce
+        this.errorLogger().warning("PelionDeviceAPI: Using EdgeCore Client API: " + this.m_edge_core_ws_uri);
+      
     }
     
     // connect to the PT
     public boolean connect() {
         try {
             if (!this.m_connected) {
-                this.m_client = new JsonRpcClient();
+                // DEBUG
+                this.errorLogger().warning("PelionEdgeCoreClientAPI: Connecting to: " + this.m_edge_core_ws_uri);
+                
+                // connect 
+                this.m_client = new JsonRpcClientNettyWebSocket(this.m_edge_core_ws_uri);
+                this.m_client.connect();
                 this.m_connected = this.register();
 
                 // DEBUG
                 this.errorLogger().warning("PelionEdgeCoreClientAPI: CONNECTED: " + this.m_edge_core_ws_uri);
             }
         }
-        catch (Exception ex) {
-            this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception in creation of URL: " + ex.getMessage());
+        catch (IOException ex) {
+            this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception in connect(): " + ex.getMessage());
         }
         return this.m_connected;
     }
@@ -77,6 +87,14 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     public void disconnect() {
         if (this.m_connected) {
             // mbed-edge: closedown the WS socket
+            if (this.m_client != null) {
+                try {
+                    this.m_client.close();
+                }
+                catch (IOException ex) {
+                    this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception in disconnect(): " + ex.getMessage());
+                }
+            }
         }
     }
     
@@ -88,8 +106,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     
     // get device
     public String getDevice(String deviceId) {
-        // not implemented
-        return null;
+        return this.invokeRPCWithResult("device_details", new Object[] {"deviceId",deviceId});
     }
     
     // unregister device
@@ -107,25 +124,32 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
         return this.invokeRPC("protocol_translator_register", new Object[] {"name",this.m_name});
     }
     
-    // execute RPC 
+    // execute RPC (boolean return)
     private boolean invokeRPC(String rpc_method_name, Object[] params) {
-        boolean status = false;
-        
+        String reply = this.invokeRPCWithResult(rpc_method_name, params);
+        if (reply != null) {
+            return true;
+        }
+        return false;
+    }
+    // execute RPC (with result)
+    private String invokeRPCWithResult(String rpc_method_name, Object[] params) {
+        String reply = null;
         if (this.m_connected) {
             try {
                 // invoke the RPC with our params
-                //this.m_client.invoke(rpc_method_name,params);
-                
-                // created successfully
-                status = true;
+                JsonElement response = this.m_client.sendRequest(rpc_method_name,params);
+                if (response != null) {
+                    reply = response.getAsString();
+                }
                 
                 // DEBUG
-                this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC SUCCESS: Method: " + rpc_method_name + " Params: " + params);
+                this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC SUCCESS: Method: " + rpc_method_name + " Params: " + params + " Reply: " + reply);
             } 
-            catch (Throwable ex) {
+            catch (IOException ex) {
                 this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Method: " + rpc_method_name + " Params: " + params + " Exception: " + ex.getMessage());
             }
         }
-        return status;
+        return reply;
     }
 }

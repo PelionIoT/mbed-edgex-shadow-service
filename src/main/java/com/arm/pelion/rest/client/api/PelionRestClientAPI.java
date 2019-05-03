@@ -25,7 +25,6 @@ package com.arm.pelion.rest.client.api;
 import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.preferences.PreferenceManager;
-import com.googlecode.jsonrpc4j.JsonRpcClient;
 import java.util.Map;
 
 /**
@@ -41,10 +40,6 @@ public class PelionRestClientAPI extends BaseClass {
     private String m_pelion_device_api_base_url = null;
     private String m_pelion_connect_api_base_url = null;
     private String m_pelion_api_token = null;
-    
-    // JSON-RPC/WS 
-    private JsonRpcClient m_client = null;
-    
     
     // default constructor
     public PelionRestClientAPI(ErrorLogger logger,PreferenceManager preferences) {
@@ -119,7 +114,28 @@ public class PelionRestClientAPI extends BaseClass {
     
     // register device
     public boolean registerDevice(Map device) {
+        
         return true;
+    }
+    
+    // create the device creation URL
+    private String createDeviceCreationURL() {
+        return this.m_pelion_device_api_base_url + "/devices";
+    }
+    
+    // create the device deletion URL
+    private String createDeviceDeleteURL(String device_id) {
+        return this.m_pelion_device_api_base_url + "/devices/" + device_id;
+    }
+    
+    // create the device get-resource URL
+    private String createDeviceGetResourceURL(String device_id,String uri) {
+        return this.m_pelion_connect_api_base_url + "/endpoints/" + device_id + uri;
+    }
+    
+    // create the device update-resource URL
+    private String createDeviceUpdateResourceURL(String device_id,String uri) {
+        return this.m_pelion_connect_api_base_url + "/endpoints/" + device_id + uri;
     }
     
     // create the device query URL

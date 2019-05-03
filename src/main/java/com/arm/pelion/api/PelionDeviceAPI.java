@@ -35,7 +35,7 @@ import java.util.Map;
  */
 public class PelionDeviceAPI extends BaseClass {
     // use mbed-edge core or Pelion API?
-    private static final boolean m_use_edge = false;    // true - use edge, false - use pelion rest API
+    private static final boolean m_use_edge = true;    // true - use edge, false - use pelion rest API
     
     // Pelion Edge Core Client API Support
     private PelionEdgeCoreClientAPI m_edge_api = null;
@@ -94,7 +94,7 @@ public class PelionDeviceAPI extends BaseClass {
     // get device
     public String getDevice(String deviceId) {
         if (m_use_edge == true) {
-            // mbed-edge: unused... use Pelion API
+            // mbed-edge: use Pelion Rest API
             return this.m_pelion_api.getDevice(deviceId);
         }
         else {

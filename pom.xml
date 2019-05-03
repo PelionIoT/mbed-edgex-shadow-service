@@ -21,11 +21,11 @@
             <version>1.10</version>
             <type>jar</type>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.github.briandilley.jsonrpc4j/jsonrpc4j -->
+        <!-- https://mvnrepository.com/artifact/org.kurento/kurento-jsonrpc-client -->
         <dependency>
-            <groupId>com.github.briandilley.jsonrpc4j</groupId>
-            <artifactId>jsonrpc4j</artifactId>
-            <version>1.5.3</version>
+            <groupId>org.kurento</groupId>
+            <artifactId>kurento-jsonrpc-client</artifactId>
+            <version>6.10.0</version>
         </dependency>
         <dependency>
             <groupId>org.fusesource.mqtt-client</groupId>
