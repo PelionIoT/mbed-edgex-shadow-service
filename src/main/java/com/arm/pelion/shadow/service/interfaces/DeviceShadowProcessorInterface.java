@@ -45,6 +45,9 @@ public interface DeviceShadowProcessorInterface {
     // closedown the mbed Client service processor
     public void closedown();
     
+    // validate the underlying connections
+    public void validateUnderlyingConnection();
+    
     // send an observation
     public boolean sendObservation(Map edgex_message);
     

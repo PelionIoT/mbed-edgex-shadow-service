@@ -43,8 +43,8 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     // EdgeX Service processor
     private EdgeXServiceProcessor m_edgex = null;
     
-    // Mbed Edge Core Client API 
-    private PelionShadowServiceDeviceManager m_api = null;
+    // Pelion Device Manager
+    private PelionShadowServiceDeviceManager m_device_manager = null;
     
     // default EPT
     private String m_default_shadow_ept = null;
@@ -63,7 +63,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         this.m_default_shadow_ept = preference_manager.valueOf("mbed_default_ept");
         
         // create the mbed edge core client API
-        this.m_api = new PelionShadowServiceDeviceManager(error_logger,preference_manager,this);
+        this.m_device_manager = new PelionShadowServiceDeviceManager(error_logger,preference_manager,this);
         
         // announce
         this.errorLogger().warning("PelionShadowServiceProcessor installed. Date: " + Utils.dateToString(Utils.now()));
@@ -75,10 +75,16 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         return this.m_db.initialize(this);
     }
     
+    // validate the underlying connection
+    @Override
+    public void validateUnderlyingConnection() {
+        this.m_device_manager.validateUnderlyingConnection();
+    }
+    
     // create the device shadow
     private Map createShadow(Map mbed_device) {
         // create the device shadow in pelion
-        boolean created = this.m_api.createDevice(mbed_device);
+        boolean created = this.m_device_manager.createDevice(mbed_device);
         if (created == true) {
             this.errorLogger().info("PelionShadowServiceProcessor: Created Pelion device: " + mbed_device);
             
@@ -94,7 +100,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     // remove the device shadow
     private boolean removeShadow(String mbed_id) {
         // remove the device shadow in pelion
-        boolean removed = this.m_api.deleteDevice(mbed_id);
+        boolean removed = this.m_device_manager.deleteDevice(mbed_id);
         if (removed == true) {
             this.errorLogger().info("PelionShadowServiceProcessor: Removed Pelion device:" + mbed_id);
         }
@@ -120,7 +126,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         // now send the observation into pelion if we have all of the data...
         if (mbed_id != null && mbed_resource_uri != null && new_value != null) {
             // send the observation to pelion
-            this.m_api.processDeviceObservation(mbed_id, mbed_resource_uri, new_value);
+            this.m_device_manager.processDeviceObservation(mbed_id, mbed_resource_uri, new_value);
             sent = true;
         }
         else {
@@ -164,7 +170,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         boolean exists = false;
 
         // query pelion via mbed edge 
-        exists = this.m_api.deviceExists(mbed_id);
+        exists = this.m_device_manager.deviceExists(mbed_id);
         if (exists == true) {
             // device exists in Pelion
             this.errorLogger().info("PelionShadowServiceProcessor: mbed ID: " + mbed_id + " exists in Pelion");
@@ -222,8 +228,8 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
             // successfully cached mappings
             this.errorLogger().info("PelionShadowServiceProcessor:closedown: SUCCESS device mapping saved...");
             
-            // close down the client API
-            this.m_api.closedown();
+            // close down the device manager
+            this.m_device_manager.closedown();
         }
         else {
             // unable to cache mappings or disabled

@@ -91,4 +91,9 @@ public final class Manager {
     public void refreshHealthStats() {
         this.m_orchestrator.refreshHealthStats();
     }
+    
+    // validate underlying connections
+    public void validateUnderlyingConnection() {
+        this.m_orchestrator.validateUnderlyingConnection();
+    }
 }

@@ -179,7 +179,8 @@ public class Main implements Runnable {
             // Wait forever
             m_logger.warning("Main: Enter main loop...");
             while(true) {
-                Utils.waitForABit(m_logger, 10000);
+                this.m_manager.validateUnderlyingConnection();
+                Utils.waitForABit(m_logger, 5000);
             }
         }
         catch (Exception ex) {

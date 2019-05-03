@@ -48,8 +48,8 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
     // database table delimiter
     private static String DEF_TABLENAME_DELIMITER = "_";
 
-    private DeviceShadowProcessorInterface m_msp = null;
-    private EdgeXServiceProcessor m_edgex = null;
+    private DeviceShadowProcessorInterface m_pelion_shadow_processor = null;
+    private EdgeXServiceProcessor m_edgex_processor = null;
     
     // JSON support
     private JSONGeneratorFactory m_json_factory = null;
@@ -100,40 +100,45 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
         }        
     }
     
+    // validate underlying connections
+    public void validateUnderlyingConnection() {
+        this.m_pelion_shadow_processor.validateUnderlyingConnection();
+    }
+                
     // set the edge core service processor
     public void setMbedEdgeCoreServiceProcessor(DeviceShadowProcessorInterface msp) {
-        this.m_msp = msp;
+        this.m_pelion_shadow_processor = msp;
     }
     
     // get the edge core service processor
     public DeviceShadowProcessorInterface getMbedEdgeCoreServiceProcessor() {
-        return m_msp;
+        return m_pelion_shadow_processor;
     }
     
     // set the EdgeX service processor
     public void setEdgeXServiceProcessor(EdgeXServiceProcessor edgex) {
-        this.m_edgex = edgex;
+        this.m_edgex_processor = edgex;
     }
     
     // get the EdgeX service processor
     public EdgeXServiceProcessor getEdgeXServiceProcessor() {
-        return this.m_edgex;
+        return this.m_edgex_processor;
     }
     
     // initialize the manager instance...
     public boolean initialize() {
        // initialize mbed edge core processor
-       if (this.m_msp.initialize()) {
+       if (this.m_pelion_shadow_processor.initialize()) {
            // initialize EdgeX service processor
-            return this.m_edgex.initialize();
+            return this.m_edgex_processor.initialize();
        }
        return false;
     }
     
     // closedown the manager instance
     public void closedown() {
-        this.m_msp.closedown();
-        this.m_edgex.closedown();
+        this.m_pelion_shadow_processor.closedown();
+        this.m_edgex_processor.closedown();
     }
     
     // get the JSON parser instance
@@ -163,7 +168,7 @@ public class Orchestrator extends BaseClass implements HealthStatisticListenerIn
         }
     }
     
-    // manual refresh the health stats
+    // refresh the health stats
     public void refreshHealthStats() {
         if (this.m_health_check_service_provider != null) {
             this.m_health_check_service_provider.refreshHealthStats();

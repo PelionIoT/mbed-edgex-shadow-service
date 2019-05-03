@@ -42,7 +42,20 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
         super(error_logger, preference_manager);
         this.m_device_manager = device_manager;
         this.m_api = new PelionDeviceAPI(error_logger,preference_manager);
-        this.m_api.connect();
+    }
+    
+    // validate the underlying connection
+    public void validateUnderlyingConnection() {
+        this.connect();
+    }
+    
+    // connect the API
+    private boolean connect() {
+        boolean connected = this.isConnected();
+        if (connected == false) {
+            return this.m_api.connect();
+        }
+        return connected;
     }
     
     // is connected?
@@ -62,11 +75,16 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
         // if the device ID is null... assume it does NOT exist yet.
         if (mbed_id == null) {
             // does not exist
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: STUB: deviceExists: ID: <empty> Exists: false");
+            this.errorLogger().warning("PelionShadowServiceDeviceManager: deviceExists: ID: <empty>. Device does NOT exist (OK).");
         }
-        else {
+        else{
+            // get the device details...
+            String json = this.m_api.getDevice(mbed_id);
+            
+            // DEBUG
+            this.errorLogger().warning("PelionShadowServiceDeviceManager: deviceExists: ID: " + mbed_id + " DETAILS: " + json);
+            
             // XXXX
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: STUB: deviceExists: ID: " + mbed_id + " Exists: " + exists);
         }
         
         // return existance
@@ -80,8 +98,17 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
         // get the device ID first
         String mbed_id = (String)device.get("id");
         if (this.deviceExists(mbed_id) == false) {
-            // XXXX Create the device
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: STUB: createDevice: " + device);
+            // Create the device
+            this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: " + device);
+            created = this.m_api.registerDevice(device);
+            if (created) {
+                // success!
+                this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: SUCCESS");
+            }
+            else {
+                // failure
+                this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: FAILURE");
+            }
         }
         else {
             // already exists
@@ -99,12 +126,22 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
         
         // only delete devices that exist
         if (this.deviceExists(mbed_id) == true) {
-            // XXXX delete the device
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: STUB: deleteDevice: " + mbed_id);
+            // delete the device
+            deleted = this.m_api.unregisterDevice(mbed_id);
+            
+            // DEBUG
+            if (deleted) {
+                // success
+                this.errorLogger().warning("PelionShadowServiceDeviceManager: deleteDevice: " + mbed_id + " SUCCESSFUL");
+            }
+            else {
+                // success
+                this.errorLogger().warning("PelionShadowServiceDeviceManager: deleteDevice: " + mbed_id + " FAILURE");
+            }
         }
         else {
             // already exists
-            this.errorLogger().info("PelionShadowServiceDeviceManager: Pelion device: " + mbed_id + " does not exist... so already deleted.");
+            this.errorLogger().warning("PelionShadowServiceDeviceManager: Pelion device: " + mbed_id + " does not exist... so already deleted.");
             deleted = true;
         }
         
