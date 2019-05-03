@@ -71,7 +71,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                 // connect 
                 this.m_client = new JsonRpcClientNettyWebSocket(this.m_edge_core_ws_uri);
                 this.m_client.connect();
-                this.m_connected = this.register();
+                this.m_connected = true;
 
                 // DEBUG
                 this.errorLogger().warning("PelionEdgeCoreClientAPI: CONNECTED: " + this.m_edge_core_ws_uri);
@@ -135,6 +135,14 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     // execute RPC (with result)
     private String invokeRPCWithResult(String rpc_method_name, Object[] params) {
         String reply = null;
+        
+        // ensure we are connected
+        if (this.m_connected == false) {
+            // attempt a connection and registration
+            this.m_connected = this.connect();
+        }
+        
+        // continue only if connected
         if (this.m_connected) {
             try {
                 // invoke the RPC with our params

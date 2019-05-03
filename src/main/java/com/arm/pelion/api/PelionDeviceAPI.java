@@ -80,14 +80,20 @@ public class PelionDeviceAPI extends BaseClass {
         if (m_use_edge == true) {
             if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
-                return this.m_edge_api.connect();
+                boolean status = this.m_edge_api.connect();
+                if (status) {
+                    this.register();
+                }
             }
             return false;
         }
         else {
             if (this.apiKeySet() == true) {
                 // Pelion API
-                return this.m_pelion_api.connect();
+                boolean status = this.m_pelion_api.connect();
+                if (status) {
+                    this.register();
+                }
             }
             return false;
         }
