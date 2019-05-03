@@ -136,27 +136,34 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     private String invokeRPCWithResult(String rpc_method_name, Object[] params) {
         String reply = null;
         
-        // ensure we are connected
-        if (this.m_connected == false) {
-            // attempt a connection and registration
-            this.m_connected = this.connect();
-        }
-        
-        // continue only if connected
-        if (this.m_connected) {
-            try {
-                // invoke the RPC with our params
-                JsonElement response = this.m_client.sendRequest(rpc_method_name,params);
-                if (response != null) {
-                    reply = response.getAsString();
-                }
-                
-                // DEBUG
-                this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC SUCCESS: Method: " + rpc_method_name + " Params: " + params + " Reply: " + reply);
-            } 
-            catch (IOException ex) {
-                this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Method: " + rpc_method_name + " Params: " + params + " Exception: " + ex.getMessage());
+        try{
+            // ensure we are connected
+            if (this.m_connected == false) {
+                // attempt a connection and registration
+                this.m_connected = this.connect();
             }
+
+            // continue only if connected
+            if (this.m_connected) {
+                try {
+                    // invoke the RPC with our params
+                    JsonElement response = this.m_client.sendRequest(rpc_method_name,params);
+                    if (response != null) {
+                        reply = response.getAsString();
+                    }
+
+                    // DEBUG
+                    this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC SUCCESS: Method: " + rpc_method_name + " Params: " + params + " Reply: " + reply);
+                } 
+                catch (IOException ex) {
+                    this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Method: " + rpc_method_name + " Params: " + params + " Exception: " + ex.getMessage());
+                    reply = null;
+                }
+            }
+        }
+        catch (Exception ex) {
+             this.errorLogger().warning("PelionEdgeCoreClientAPI: RPC FAILURE: Method: " + rpc_method_name + " Params: " + params + " Exception: " + ex.getMessage());
+             reply = null;
         }
         return reply;
     }
