@@ -22,6 +22,7 @@
  */
 package com.arm.pelion.shadow.service.core;
 
+import com.arm.pelion.shadow.service.health.MbedEdgeCoreServiceHealthStatistic;
 import com.arm.pelion.shadow.service.json.JSONParser;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -74,6 +75,9 @@ public class Utils {
     private static char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     private static String __cache_hash = null;
     private static String _externalIPAddress = null;
+    
+    // mbed core runtime check
+    private static MbedEdgeCoreServiceHealthStatistic _mbed_edge_stat = null;
 
     // get local timezone offset from UTC in milliseconds
     public static int getUTCOffset() {
@@ -815,5 +819,20 @@ public class Utils {
             
         }
         return map;
+    }
+    
+    // static call to do a quick check on demand for the service
+    public static boolean mbedEdgeRunning() {
+        // allocate if needed
+        if (_mbed_edge_stat == null) {
+            _mbed_edge_stat = new MbedEdgeCoreServiceHealthStatistic(null);
+        }
+        
+        // Get the status
+        String status = _mbed_edge_stat.check();
+        if (status != null && status.equalsIgnoreCase("yes")) {
+            return true;
+        }
+        return false;
     }
 }

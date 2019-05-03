@@ -61,42 +61,48 @@ public class PelionDeviceAPI extends BaseClass {
         this.m_pelion_api.initialize();
     }
     
-    // has the pelion API key been set?
+    // is the pelion API key set?
     private boolean apiKeySet() {
         if (this.m_api_key != null && this.m_api_key.contains("ak_") == true) {
-            // set
+            // api key is set...
             return true;
         }
         return false;
     }
     
+    // is the mbed edge runtime operational
+    private boolean mbedEdgeRunning() {
+        return this.preferences().mbedEdgeRunning();
+    }
+    
     // connect to the PT
     public boolean connect() {
-        if (this.apiKeySet() == true) {
-            if (m_use_edge == true) {
+        if (m_use_edge == true) {
+            if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
                 return this.m_edge_api.connect();
             }
-            else {
+            return false;
+        }
+        else {
+            if (this.apiKeySet() == true) {
                 // Pelion API
                 return this.m_pelion_api.connect();
             }
+            return false;
         }
-        else {
-            // no key set
-            this.errorLogger().warning("PelionDeviceAPI: Not connecting yet. No Pelion API Key has been set yet (OK).");
-        }
-        return false;
     }
     
     // disconnect from the PT
     public void disconnect() {
-        if (this.apiKeySet() == true) {
-            if (m_use_edge == true) {
+        if (m_use_edge == true) {
+            if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
                 this.m_edge_api.disconnect();
             }
-            else {
+        }
+        else {
+            if (this.apiKeySet() == true) {
                 // Pelion API
                 this.m_pelion_api.disconnect();
             }
@@ -105,27 +111,32 @@ public class PelionDeviceAPI extends BaseClass {
     
     // is connected?
     public boolean isConnected() {
-        if (this.apiKeySet() == true) {
         if (m_use_edge == true) {
-            // mbed-edge
-            return this.m_edge_api.isConnected();
+            if (this.mbedEdgeRunning() == true) {
+                // mbed-edge
+                return this.m_edge_api.isConnected();
+            }
+            return false;
         }
         else {
-            // Pelion API
-            return this.m_pelion_api.isConnected();
+            if (this.apiKeySet() == true) {
+                // Pelion API
+                return this.m_pelion_api.isConnected();
+            }
+            return false;
         }
-        }
-        return false;
     }
     
     // get device
     public String getDevice(String deviceId) {
-        if (this.apiKeySet() == true) {
-            if (m_use_edge == true) {
+        if (m_use_edge == true) {
+            if (this.apiKeySet() == true) {
                 // mbed-edge: use Pelion Rest API
                 return this.m_pelion_api.getDevice(deviceId);
             }
-            else {
+        }
+        else {
+            if (this.apiKeySet() == true) {
                 // Pelion API
                 return this.m_pelion_api.getDevice(deviceId);
             }
@@ -135,47 +146,56 @@ public class PelionDeviceAPI extends BaseClass {
     
     // unregister device
     public boolean unregisterDevice(String deviceId) {
-        if (this.apiKeySet() == true) {
-            if (m_use_edge == true) {
+        if (m_use_edge == true) {
+            if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
                 return this.m_edge_api.unregisterDevice(deviceId);
             }
-            else {
+            return false;
+        }
+        else {
+            if (this.apiKeySet() == true) {
                 // Pelion API
                 return this.m_pelion_api.unregisterDevice(deviceId);
             }
+            return false;
         }
-        return false;
     }
     
     // register device
     public boolean registerDevice(Map device) {
-        if (this.apiKeySet() == true) {
-            if (m_use_edge == true) {
+        if (m_use_edge == true) {
+            if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
                 return this.m_edge_api.registerDevice(this.toMbedEdgeCorePTFormat(device));
             }
-            else {
+            return false;  
+        }
+        else {
+            if (this.apiKeySet() == true) {
                 // Pelion API
                 return this.m_pelion_api.registerDevice(device);
             }
+            return false;
         }
-        return false;
     }
     
     // register our API
     private boolean register() {
-        if (this.apiKeySet() == true) {
-            if (m_use_edge == true) {
+        if (m_use_edge == true) {
+            if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
                 return this.m_edge_api.register();
             }
-            else {
+            return false;
+        }
+        else {
+            if (this.apiKeySet() == true) {
                 // Pelion API
                 return this.m_pelion_api.register();
             }
+            return false;
         }
-        return false;
     }
     
     // convert to the mbed-edge core format

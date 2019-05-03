@@ -41,7 +41,8 @@ public class PreferenceManager extends BaseClass {
     private static final String PROPERTY_DEFINE = "config_file";      // passed as -Dconfig_file="../conf/service.properties"
     private static final String DEFAULT_PROPERTIES_FILE = "WEB-INF/classes/service.properties";
     private String m_properties_file = null;
-    Object m_obj = null;
+    private Object m_obj = null;
+    private boolean m_mbed_edge_running = false;
 
     private Properties m_config_properties = null;        // DB config properties
 
@@ -49,6 +50,16 @@ public class PreferenceManager extends BaseClass {
         super(error_logger, null);
         this.m_properties_file = DEFAULT_PROPERTIES_FILE;
         this.readPreferencesFile();
+    }
+    
+    // mbed edge running status
+    public void mbedEdgeRunning(boolean mbed_edge_running) {
+        this.m_mbed_edge_running = mbed_edge_running;
+    }
+    
+    // mbed edge running status
+    public boolean mbedEdgeRunning() {
+        return this.m_mbed_edge_running;
     }
     
     // set and object handle 

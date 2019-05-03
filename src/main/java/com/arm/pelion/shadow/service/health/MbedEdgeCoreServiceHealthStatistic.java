@@ -38,7 +38,7 @@ public class MbedEdgeCoreServiceHealthStatistic extends BaseValidatorClass imple
     }
     
     // execute script
-    private String check() {
+    public String check() {
         // construct the arguments
         String cmd = "./scripts/mbed_edge_running.sh";
         String response = null;
@@ -90,10 +90,16 @@ public class MbedEdgeCoreServiceHealthStatistic extends BaseValidatorClass imple
         if (status != null && status.equalsIgnoreCase("yes")) {
             // running
             this.m_value = (String)"Running";
+            
+            // update preferences manager as well
+            this.preferences().mbedEdgeRunning(true);
         }
         else {
             // not running
             this.m_value = (String)"Down";
+            
+            // update preferences manager as well
+            this.preferences().mbedEdgeRunning(false);
         }
     }
 
