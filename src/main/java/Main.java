@@ -76,7 +76,6 @@ public class Main implements Runnable {
     public Main(String[] args) {
         m_logger = new ErrorLogger();
         m_preferences = new PreferenceManager(m_logger);
-        m_preferences.mbedEdgeRunning(Utils.mbedEdgeRunning());
         m_http = new HttpTransport(m_logger,m_preferences);
         
         // note the http handle

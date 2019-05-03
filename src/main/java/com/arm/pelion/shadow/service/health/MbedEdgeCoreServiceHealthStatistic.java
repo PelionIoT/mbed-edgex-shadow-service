@@ -34,11 +34,29 @@ public class MbedEdgeCoreServiceHealthStatistic extends BaseValidatorClass imple
     // primary constructor
     public MbedEdgeCoreServiceHealthStatistic(HealthCheckServiceInterface provider) {
         super(provider,"mbed_edge_core");
-        this.m_value = (String)"Down";
+        this.updateMbedEdgeCoreStatus();
+    }
+    
+    // is mbed edge core running?
+    public boolean mbedEdgeRunning() {
+        // execute the script to check the latest status
+        String status = this.check().trim();
+        
+        //DEBUG
+        this.errorLogger().info("MbedEdgeCore: " + status);
+        
+        // set the status
+        if (status != null && status.equalsIgnoreCase("yes")) {
+            // update preferences manager as well
+            this.preferences().mbedEdgeRunning(true);
+            return true;
+        } 
+        this.preferences().mbedEdgeRunning(false);
+        return false;
     }
     
     // execute script
-    public String check() {
+    private String check() {
         // construct the arguments
         String cmd = "./scripts/mbed_edge_running.sh";
         String response = null;
@@ -80,26 +98,13 @@ public class MbedEdgeCoreServiceHealthStatistic extends BaseValidatorClass imple
     
     // update the mbed edge core status
     private void updateMbedEdgeCoreStatus() {
-        // execute the script to check the latest status
-        String status = this.check().trim();
-        
-        //DEBUG
-        this.errorLogger().info("MbedEdgeCore: " + status);
-        
-        // set the status
-        if (status != null && status.equalsIgnoreCase("yes")) {
+        if (this.mbedEdgeRunning()) {
             // running
             this.m_value = (String)"Running";
-            
-            // update preferences manager as well
-            this.preferences().mbedEdgeRunning(true);
         }
         else {
             // not running
             this.m_value = (String)"Down";
-            
-            // update preferences manager as well
-            this.preferences().mbedEdgeRunning(false);
         }
     }
 

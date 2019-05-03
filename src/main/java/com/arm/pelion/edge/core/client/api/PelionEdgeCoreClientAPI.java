@@ -41,7 +41,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     private String m_name = null;
     
     // websocket configuration (must have socat in container runtime)
-    // confirm that the port number matches start_instance.sh 
+    // confirm that the port number matches scripts/restart_mbed_edge_core.sh 
     private int m_ws_port = 4455;
     private String m_ws_host = "localhost";
     
