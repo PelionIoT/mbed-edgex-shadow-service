@@ -180,7 +180,7 @@ public class Main implements Runnable {
             m_logger.warning("Main: Enter main loop...");
             while(true) {
                 this.m_manager.validateUnderlyingConnection();
-                Utils.waitForABit(m_logger, 5000);
+                Utils.waitForABit(m_logger, 10000);
             }
         }
         catch (Exception ex) {
