@@ -27,6 +27,7 @@ import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.preferences.PreferenceManager;
 import com.arm.pelion.rest.client.api.PelionRestClientAPI;
 import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import java.util.Map;
 
 /**
@@ -47,18 +48,28 @@ public class PelionDeviceAPI extends BaseClass {
     private String m_api_key = null;
     
     // default constructor
-    public PelionDeviceAPI(ErrorLogger logger,PreferenceManager preferences) {
+    public PelionDeviceAPI(ErrorLogger logger,PreferenceManager preferences,Orchestrator orchestrator) {
         super(logger,preferences);
         
         // get the Pelion API Key
         this.m_api_key = this.prefValue("api_key");
         
         // Pelion Edge Core Client API Support
-        this.m_edge_api = new PelionEdgeCoreClientAPI(logger,preferences);
+        this.m_edge_api = new PelionEdgeCoreClientAPI(logger,preferences,orchestrator);
         
         // Pelion API
-        this.m_pelion_api = new PelionRestClientAPI(logger,preferences);
+        this.m_pelion_api = new PelionRestClientAPI(logger,preferences,orchestrator);
         this.m_pelion_api.initialize();
+    }
+    
+    // get the Pelion Rest Client API
+    public PelionRestClientAPI  getPelionRestClientAPI(){
+        return this.m_pelion_api;
+    }
+    
+    // get the Pelion mbed-edge Client API
+    public PelionEdgeCoreClientAPI  getPelionEdgeCoreClientAPI(){
+        return this.m_edge_api;
     }
     
     // is the pelion API key set?
@@ -134,17 +145,17 @@ public class PelionDeviceAPI extends BaseClass {
     }
     
     // get device
-    public String getDevice(String deviceId) {
+    public String getDevice(String ep) {
         if (m_use_edge == true) {
             if (this.apiKeySet() == true) {
-                // mbed-edge: use Pelion Rest API
-                return this.m_pelion_api.getDevice(deviceId);
+                // mbed-edge
+                return this.m_edge_api.getDevice(ep);
             }
         }
         else {
             if (this.apiKeySet() == true) {
                 // Pelion API
-                return this.m_pelion_api.getDevice(deviceId);
+                return this.m_pelion_api.getDevice(ep);
             }
         }
         return null;
@@ -169,20 +180,20 @@ public class PelionDeviceAPI extends BaseClass {
     }
     
     // register device
-    public boolean registerDevice(Map device) {
+    public Map registerDevice(Map device) {
         if (m_use_edge == true) {
             if (this.mbedEdgeRunning() == true) {
                 // mbed-edge
                 return this.m_edge_api.registerDevice(device);
             }
-            return false;  
+            return null;  
         }
         else {
             if (this.apiKeySet() == true) {
                 // Pelion API
                 return this.m_pelion_api.registerDevice(device);
             }
-            return false;
+            return null;
         }
     }
     
@@ -199,6 +210,24 @@ public class PelionDeviceAPI extends BaseClass {
             if (this.apiKeySet() == true) {
                 // Pelion API
                 return this.m_pelion_api.register();
+            }
+            return false;
+        }
+    }
+    
+    // send an observation
+    public boolean sendObservation(String mbed_id,String ep,String uri,Object value) {
+        if (m_use_edge == true) {
+            if (this.mbedEdgeRunning() == true) {
+                // mbed-edge
+                return this.m_edge_api.sendObservation(ep,uri,value);
+            }
+            return false;
+        }
+        else {
+            if (this.apiKeySet() == true) {
+                // Pelion API
+                return this.m_pelion_api.sendObservation(mbed_id,uri,value);
             }
             return false;
         }

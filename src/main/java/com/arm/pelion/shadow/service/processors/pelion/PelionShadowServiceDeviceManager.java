@@ -23,6 +23,9 @@
 package com.arm.pelion.shadow.service.processors.pelion;
 
 import com.arm.pelion.api.PelionDeviceAPI;
+import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
+import com.arm.pelion.rest.client.api.PelionRestClientAPI;
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.interfaces.DeviceResourceManagerInterface;
@@ -36,12 +39,14 @@ import java.util.Map;
 public class PelionShadowServiceDeviceManager extends BaseClass implements Runnable {
     private DeviceResourceManagerInterface m_device_manager = null;
     private PelionDeviceAPI m_api = null;
+    private Orchestrator m_orchestrator = null;
     
     // default constructor
-    public PelionShadowServiceDeviceManager(ErrorLogger error_logger, PreferenceManager preference_manager, DeviceResourceManagerInterface device_manager) {
+    public PelionShadowServiceDeviceManager(ErrorLogger error_logger, PreferenceManager preference_manager, DeviceResourceManagerInterface device_manager,Orchestrator orchestrator) {
         super(error_logger, preference_manager);
         this.m_device_manager = device_manager;
-        this.m_api = new PelionDeviceAPI(error_logger,preference_manager);
+        this.m_orchestrator = orchestrator;
+        this.m_api = new PelionDeviceAPI(error_logger,preference_manager,orchestrator);
     }
     
     // validate the underlying connection
@@ -69,80 +74,62 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
     }
     
     // device exists in Pelion?
-    public boolean deviceExists(String mbed_id) {
-        boolean exists = false;
-        
+    public Map deviceExists(String ep) {        
         // if the device ID is null... assume it does NOT exist yet.
-        if (mbed_id == null) {
+        if (ep == null) {
             // does not exist
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: deviceExists: ID: <empty>. Device does NOT exist (OK).");
+            this.errorLogger().info("PelionShadowServiceDeviceManager: deviceExists: EP: <empty>. ERROR: no endpoint name given");
+            return null;
         }
         else{
             // get the device details...
-            String json = this.m_api.getDevice(mbed_id);
-            
-            // DEBUG
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: deviceExists: ID: " + mbed_id + " DETAILS: " + json);
-            
-            // XXXX
+            String device = this.m_api.getDevice(ep);
+            if (device != null) {
+                // DEBUG
+                this.errorLogger().info("PelionShadowServiceDeviceManager: deviceExists: EP: " + ep + " DEVICE: " + device);
+                return this.m_orchestrator.getJSONParser().parseJson(device);
+                
+            }
+            else {
+                // DEBUG
+                this.errorLogger().info("PelionShadowServiceDeviceManager: deviceExists: EP: " + ep + " DETAILS: <empty>. Device does NOT exist (OK).");
+                return null;
+            }
         }
-        
-        // return existance
-        return exists;
     }
     
     // create the device
-    public boolean createDevice(Map device) {
-        boolean created = false;
+    public Map createDevice(Map device) {
+        // DEBUG
+        this.errorLogger().info("PelionShadowServiceDeviceManager: createDevice: " + device);
         
-        // get the device ID first
-        String mbed_id = (String)device.get("id");
-        if (this.deviceExists(mbed_id) == false) {
-            // Create the device
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: " + device);
-            created = this.m_api.registerDevice(device);
-            if (created) {
-                // success!
-                this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: SUCCESS");
-            }
-            else {
-                // failure
-                this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: FAILURE");
-            }
+        // register the device
+        device = this.m_api.registerDevice(device);
+        if (device != null) {
+            // success!
+            this.errorLogger().info("PelionShadowServiceDeviceManager: createDevice: SUCCESS: " + device);
         }
         else {
-            // already exists
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: Pelion device: " + mbed_id + " already exists (OK)");
-            created = true;
+            // failure
+            this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: FAILURE: " + device);
         }
-        
-        // return status
-        return created;
+       
+        // return the device
+        return device;
     }
     
     // delete the device
     public boolean deleteDevice(String mbed_id) {
-        boolean deleted = false;
-        
-        // only delete devices that exist
-        if (this.deviceExists(mbed_id) == true) {
-            // delete the device
-            deleted = this.m_api.unregisterDevice(mbed_id);
-            
-            // DEBUG
-            if (deleted) {
-                // success
-                this.errorLogger().warning("PelionShadowServiceDeviceManager: deleteDevice: " + mbed_id + " SUCCESSFUL");
-            }
-            else {
-                // success
-                this.errorLogger().warning("PelionShadowServiceDeviceManager: deleteDevice: " + mbed_id + " FAILURE");
-            }
+        boolean deleted = this.m_api.unregisterDevice(mbed_id);
+
+        // DEBUG
+        if (deleted) {
+            // success
+            this.errorLogger().info("PelionShadowServiceDeviceManager: deleteDevice: " + mbed_id + " SUCCESSFUL");
         }
         else {
-            // already exists
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: Pelion device: " + mbed_id + " does not exist... so already deleted.");
-            deleted = true;
+            // success
+            this.errorLogger().warning("PelionShadowServiceDeviceManager: deleteDevice: " + mbed_id + " FAILURE");
         }
         
         // return status
@@ -150,9 +137,8 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
     }
     
     // direct Pelion to create a device resource observation
-    public void processDeviceObservation(String mbed_id,String uri,Object value) {
-        // XXX update the device shadow and create an observation event
-        this.errorLogger().warning("PelionShadowServiceDeviceManager: STUB: processDeviceObservation: mbed ID: " + mbed_id + " URI: " + uri + " VALUE: " + value);
+    public boolean processDeviceObservation(String mbed_id,String ep,String uri,Object value) {
+        return this.m_api.sendObservation(mbed_id,ep,uri,value);
     }
     
     // callback to process a device resource "get" request
@@ -170,4 +156,13 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
     public void run() {
     }
     
+    // get the Pelion Rest Client API
+    public PelionRestClientAPI getPelionRestClientAPI() {
+        return this.m_api.getPelionRestClientAPI();
+    }
+    
+    // get the Pelion edge core client API
+    public PelionEdgeCoreClientAPI getPelionEdgeCoreClientAPI() {
+        return this.m_api.getPelionEdgeCoreClientAPI();
+    }
 }

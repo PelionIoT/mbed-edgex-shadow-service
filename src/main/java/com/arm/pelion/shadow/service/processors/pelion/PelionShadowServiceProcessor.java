@@ -22,6 +22,9 @@
  */
 package com.arm.pelion.shadow.service.processors.pelion;
 
+import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
+import com.arm.pelion.rest.client.api.PelionRestClientAPI;
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.db.mbedDeviceShadowDatabase;
 import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
@@ -50,20 +53,24 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     private String m_default_shadow_ept = null;
 
     // cache database
-    protected mbedDeviceShadowDatabase m_db = null;
+    private mbedDeviceShadowDatabase m_db = null;
+    
+    // Orchestrator
+    private Orchestrator m_orchestrator = null;
     
     // default constructor
-    public PelionShadowServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager) {
+    public PelionShadowServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager,Orchestrator orchestrator) {
         super(error_logger, preference_manager);
+        this.m_orchestrator = orchestrator;
         
         // create the shadow database
-        this.m_db = new mbedDeviceShadowDatabase(error_logger,preference_manager);
+        this.m_db = new mbedDeviceShadowDatabase(error_logger,preference_manager,orchestrator);
         
         // get the default endpoint type for shadow devices
         this.m_default_shadow_ept = preference_manager.valueOf("mbed_default_ept");
         
         // create the mbed edge core client API
-        this.m_device_manager = new PelionShadowServiceDeviceManager(error_logger,preference_manager,this);
+        this.m_device_manager = new PelionShadowServiceDeviceManager(error_logger,preference_manager,this,orchestrator);
         
         // announce
         this.errorLogger().warning("PelionShadowServiceProcessor installed. Date: " + Utils.dateToString(Utils.now()));
@@ -84,8 +91,8 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     // create the device shadow
     private Map createShadow(Map mbed_device) {
         // create the device shadow in pelion
-        boolean created = this.m_device_manager.createDevice(mbed_device);
-        if (created == true) {
+        mbed_device = this.m_device_manager.createDevice(mbed_device);
+        if (mbed_device != null) {
             this.errorLogger().info("PelionShadowServiceProcessor: Created Pelion device: " + mbed_device);
             
             // return the created device
@@ -112,26 +119,38 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     
     // send an observation to the device shadow...
     @Override
-    public boolean sendObservation(Map edgex_message) {
-        boolean sent = false;
+    public boolean sendObservation(Map message) {
+        boolean sent = true;
         
-        // DEBUG
-        this.errorLogger().info("PelionShadowServiceProcessor: in sendObservation()... MAP: " + edgex_message);
-        
-        // XXX parse the edgex_message into mbed device and resource detail
-        String mbed_id = null;
-        String mbed_resource_uri = null;
-        String new_value = "";
-        
-        // now send the observation into pelion if we have all of the data...
-        if (mbed_id != null && mbed_resource_uri != null && new_value != null) {
-            // send the observation to pelion
-            this.m_device_manager.processDeviceObservation(mbed_id, mbed_resource_uri, new_value);
-            sent = true;
-        }
-        else {
-            // error
-            this.errorLogger().warning("PelionShadowServiceProcessor: Unable to dispatch observation to Pelion (parse error)");
+        // loop through the readings and process each one...
+        List readings = (List)message.get("readings");
+        for(int i=0;readings != null && i<readings.size();++i) {
+            try {
+                // parse the edgex_message into mbed device and resource detail
+                Map reading = (Map)readings.get(i);
+                String edgex_name = (String)reading.get("device");
+                String edgex_resource = (String)reading.get("name");
+                Object edgex_value = (Object)reading.get("value");
+                String mbed_id = this.m_db.lookupMbedName(edgex_name);
+                String mbed_resource_uri = this.mapEdgeXResourceToMbedResource(edgex_resource);
+                Object new_value = edgex_value;
+
+                // now send the observation into pelion if we have all of the data...
+                if (mbed_id != null && mbed_resource_uri != null && new_value != null) {
+                    // send the observation to pelion
+                    sent = this.m_device_manager.processDeviceObservation(mbed_id, edgex_name, mbed_resource_uri, new_value);
+                }
+                else {
+                    // error
+                    this.errorLogger().warning("PelionShadowServiceProcessor: Unable to dispatch observation to Pelion (mapping issues) MBED_ID: " + mbed_id + " URI: " + mbed_resource_uri + " VALUE: " + new_value);
+                    sent = false;
+                }
+            }
+            catch (Exception ex) {
+                // error
+                this.errorLogger().warning("PelionShadowServiceProcessor: Unable to dispatch observation to Pelion (exception): " + ex.getMessage());
+                sent = false;
+            }
         }
 
         // return our send status
@@ -170,8 +189,8 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         boolean exists = false;
 
         // query pelion via mbed edge 
-        exists = this.m_device_manager.deviceExists(mbed_id);
-        if (exists == true) {
+        Map device = this.m_device_manager.deviceExists(mbed_id);
+        if (device != null) {
             // device exists in Pelion
             this.errorLogger().info("PelionShadowServiceProcessor: mbed ID: " + mbed_id + " exists in Pelion");
         }
@@ -254,7 +273,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         }
         
         // DEBUG
-        this.errorLogger().warning("PelionShadowServiceProcessor: deviceShadowed: DEV: " + mbed_device + " SHADOWED: " + shadowed + " Name: " + edgex_name);
+        this.errorLogger().info("PelionShadowServiceProcessor: deviceShadowed: DEV: " + mbed_device + " SHADOWED: " + shadowed + " Name: " + edgex_name);
 
         // return our shadow status
         return shadowed;
@@ -263,6 +282,9 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     // initialize the mbed device map
     private Map initMbedDeviceMapFromEdgeMap(Map edgex_device) {
         HashMap<String,Object> mbed_device = new HashMap<>();
+        
+        // DEBUG
+        this.errorLogger().info("initMbedDeviceMapFromEdgeMap: EDGEX_DEVICE: " + edgex_device);
 
         // duplicate the basic information for this device...
         mbed_device.put("num_resources",(Integer)edgex_device.get("num_resources"));
@@ -272,7 +294,14 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         if (ept == null) {
             ept = this.m_default_shadow_ept;
         }
+        
+        // grab device details
         mbed_device.put("ept",ept);
+        mbed_device.put("ep",edgex_device.get("name"));
+        mbed_device.put("edgex_id",edgex_device.get("id"));
+        
+        // DEBUG
+        this.errorLogger().info("initMbedDeviceMapFromEdgeMap: MBED_DEVICE: " + mbed_device);
 
         // return the mbed device map
         return mbed_device;
@@ -289,13 +318,13 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         mbed_device = this.mapEdgeXResourcesToMbedResources(mbed_device,edgex_device);
         
         // With the mbed device map now formed, call mCS to create this device
-        mbed_device = this.createShadow(mbed_device);
-        if (mbed_device != null) {
+        Map final_mbed_device = this.createShadow(mbed_device);
+        if (final_mbed_device != null) {
             // DEBUG
-            this.errorLogger().info("PelionShadowServiceProcessor: SUCCESS. mbed Device Shadow created: " + mbed_device);
+            this.errorLogger().info("PelionShadowServiceProcessor: SUCCESS. mbed Device Shadow created: " + final_mbed_device);
 
             // return the mbed device
-            return mbed_device;
+            return final_mbed_device;
         }
         else {
             if (mbed_device != null) {
@@ -323,6 +352,9 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
             // create the mbed Shadow + its resources
             Map mbed_device = this.createMbedDeviceShadow(edgex_device);
             if (mbed_device != null) {
+                // DEBUG
+                this.errorLogger().info("PelionShadowServiceProcessor: DEVICE: " + mbed_device);
+                
                 // save this new device off in the cache
                 String mbed_id = (String)mbed_device.get("id");
                 this.m_db.addDevice(mbed_id, mbed_device, edgex_dev_name, edgex_device);
@@ -333,11 +365,11 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
                 // DEBUG
                 if (created == true) {
                     // Successfully cache the shadow!
-                    this.errorLogger().info("PelionShadowServiceProcessor: SUCCESS. mbed shadow: " + mbed_id + " for EdgeX device: " + edgex_dev_name + " successfully cached");
+                    this.errorLogger().warning("PelionShadowServiceProcessor: SUCCESS. mbed shadow: " + mbed_id + " for EdgeX device: " + edgex_dev_name + " successfully cached");
                 }
                 else {
                     // Unable to cache the shadow
-                    this.errorLogger().info("PelionShadowServiceProcessor: FAILURE. mbed shadow: " + mbed_id + " for EdgeX device: " + edgex_dev_name + " NOT CACHED");
+                    this.errorLogger().warning("PelionShadowServiceProcessor: FAILURE. mbed shadow: " + mbed_id + " for EdgeX device: " + edgex_dev_name + " NOT CACHED");
                 }
             }
             else {
@@ -378,7 +410,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
             }
             catch (Exception ex) {
                 // JSON parsing error
-                this.errorLogger().warning("PelionShadowServiceProcessor: JSON parsing error: " + ex.getMessage(),ex);
+                this.errorLogger().warning("PelionShadowServiceProcessor: JSON parsing error: " + ex.getMessage());
             }
        }
        else {
@@ -476,5 +508,15 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     @Override
     public EdgeXServiceProcessor edgeXEventProcessor() {
         return this.m_edgex;
+    }
+
+    @Override
+    public PelionRestClientAPI getPelionRestClientAPI() {
+        return this.m_device_manager.getPelionRestClientAPI();
+    }
+
+    @Override
+    public PelionEdgeCoreClientAPI getPelionEdgeCoreClientAPI() {
+        return this.m_device_manager.getPelionEdgeCoreClientAPI();
     }
 }

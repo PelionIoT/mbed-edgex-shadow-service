@@ -158,7 +158,7 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
         // make sure its our topic
         if (topic != null && topic.equalsIgnoreCase(this.m_mqtt_event_topic) == true) {
            // DEBUG
-           this.errorLogger().warning("EdgeXServiceProcessor: onMessageReceive: topic: " + topic + " message: " + message);
+           this.errorLogger().info("EdgeXServiceProcessor: onMessageReceive: topic: " + topic + " message: " + message);
            
            try {
                 // Parse the JSON

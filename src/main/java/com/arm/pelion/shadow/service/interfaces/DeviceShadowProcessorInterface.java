@@ -22,6 +22,8 @@
  */
 package com.arm.pelion.shadow.service.interfaces;
 
+import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
+import com.arm.pelion.rest.client.api.PelionRestClientAPI;
 import com.arm.pelion.shadow.service.processors.edgex.EdgeXServiceProcessor;
 import java.util.Map;
 
@@ -65,4 +67,10 @@ public interface DeviceShadowProcessorInterface {
     
     // lookup our mbed device shadow for this edgex device
     public Map mbedDeviceToEdgeXDevice(String mbed_name);
+    
+    // get the Pelion Rest Client API
+    PelionRestClientAPI getPelionRestClientAPI();
+    
+    // get the Pelion edge core Client API
+    PelionEdgeCoreClientAPI getPelionEdgeCoreClientAPI();
 }

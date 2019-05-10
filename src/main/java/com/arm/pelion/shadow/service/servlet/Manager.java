@@ -57,7 +57,7 @@ public final class Manager {
         this.m_orchestrator = new Orchestrator(this.m_error_logger,this.m_preference_manager);
         
         // create the mbed shadow service Processor
-        DeviceShadowProcessorInterface msp = new PelionShadowServiceProcessor(this.m_error_logger,this.m_preference_manager);
+        DeviceShadowProcessorInterface msp = new PelionShadowServiceProcessor(this.m_error_logger,this.m_preference_manager,this.m_orchestrator);
         
         // add our EdgeX event processor
         EdgeXServiceProcessor edgex = new EdgeXServiceProcessor(this.m_error_logger,this.m_preference_manager,msp);

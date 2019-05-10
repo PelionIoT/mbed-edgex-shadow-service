@@ -14,6 +14,7 @@ com/arm/pelion/shadow/service/health/HealthCheckServiceProvider.class
 com/arm/pelion/shadow/service/health/interfaces/HealthStatisticListenerInterface.class
 com/arm/pelion/shadow/service/health/MemoryStatistic.class
 com/arm/pelion/shadow/service/health/interfaces/HealthCheckServiceInterface.class
+com/arm/pelion/edge/core/client/api/Operations.class
 com/arm/pelion/shadow/service/transport/HttpTransport.class
 com/arm/pelion/shadow/service/json/JSONParser$2.class
 com/arm/pelion/shadow/service/transport/PelionTrustManagerListFactory.class

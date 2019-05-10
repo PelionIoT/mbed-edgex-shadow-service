@@ -22,9 +22,9 @@
  */
 package com.arm.pelion.shadow.service.db;
 
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
-import com.arm.pelion.shadow.service.core.Utils;
 import com.arm.pelion.shadow.service.preferences.PreferenceManager;
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,9 +56,13 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     private HashMap<String,String> m_mbed_db = null;
     private HashMap<String,String> m_mbed_cert = null;
     
+    // Orchestrator
+    private Orchestrator m_orchestrator = null;
+    
     // default constructor
-    public mbedDeviceShadowDatabase(ErrorLogger error_logger, PreferenceManager preference_manager) {
+    public mbedDeviceShadowDatabase(ErrorLogger error_logger, PreferenceManager preference_manager,Orchestrator orchestrator) {
         super(error_logger, preference_manager);
+        this.m_orchestrator = orchestrator;
         this.m_disable_cache = !(preference_manager.booleanValueOf("cache_enabled"));
     }
     
@@ -167,17 +171,13 @@ public class mbedDeviceShadowDatabase extends BaseClass {
     
     // add a new device
     public void addDevice(String mbed_id,Map mbed_json,String edgex_name,Map edgex_json) {
-        // Stringify the JSON
-        String mbed_json_str = Utils.removeArray(this.jsonGenerator().generateJson(mbed_json));
-        String edgex_json_str = Utils.removeArray(this.jsonGenerator().generateJson(edgex_json)); 
-        
         // DEBUG
-        this.errorLogger().info("addDevice: mbed_id: " + mbed_id + " mbed_device: " + mbed_json_str + " edgex_name: " + edgex_name + " edgex_device: " + edgex_json_str);
+        this.errorLogger().info("addDevice: mbed_id: " + mbed_id + " mbed_device: " + mbed_json + " edgex_name: " + edgex_name + " edgex_device: " + edgex_json);
         
         // save to the db
         this.m_id_map_db.put(mbed_id, edgex_name);
-        this.m_mbed_db.put(mbed_id,mbed_json_str);
-        this.m_edgex_db.put(edgex_name,edgex_json_str);
+        this.m_mbed_db.put(mbed_id,this.m_orchestrator.getJSONGenerator().generateJson(mbed_json));
+        this.m_edgex_db.put(edgex_name,this.m_orchestrator.getJSONGenerator().generateJson(edgex_json));
     }
     
     // get the mbed Device JSON
