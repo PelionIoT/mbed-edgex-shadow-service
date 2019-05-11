@@ -61,7 +61,12 @@ public class DatabaseValidator extends BaseValidatorClass implements Runnable {
 
     // WORKER: validate the Database Connections
     private boolean validateDatabaseConnection() {
-        Orchestrator o = this.m_provider.getOrchestrator();
-        return o.getMbedEdgeCoreServiceProcessor().validateUnderlyingConnection();
+        try {
+            Orchestrator o = this.m_provider.getOrchestrator();
+            return o.getMbedEdgeCoreServiceProcessor().validateUnderlyingConnection();
+        }
+        catch (Exception ex) {
+            return false;
+        }
     }
 }

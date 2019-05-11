@@ -49,7 +49,12 @@ public class ThreadCountStatistic extends BaseValidatorClass implements Runnable
 
     // WORKER: query how many active threads we currently have
     private int getActiveThreadCount() {
-        Orchestrator o = this.m_provider.getOrchestrator();
-        return o.getActiveThreadCount();
+        try {
+            Orchestrator o = this.m_provider.getOrchestrator();
+            return o.getActiveThreadCount();
+        }
+        catch (Exception ex) {
+            return 1;
+        }
     }
 }

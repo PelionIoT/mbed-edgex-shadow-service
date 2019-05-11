@@ -92,7 +92,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                         if (this.m_client_pt == null) {
                             // Connect PT
                             // DEBUG
-                            this.errorLogger().warning("PelionEdgeCoreClientAPI: PT Connecting to: " + this.m_edge_core_ws_pt_uri);
+                            this.errorLogger().info("PelionEdgeCoreClientAPI: PT Connecting to: " + this.m_edge_core_ws_pt_uri);
 
                             // not registered
                             this.m_registered = false;
@@ -105,7 +105,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                         if (this.m_client_mgmt == null) {
                             // Connect MGMT
                             // DEBUG
-                            this.errorLogger().warning("PelionEdgeCoreClientAPI: MGMT Connecting to: " + this.m_edge_core_ws_mgmt_uri);
+                            this.errorLogger().info("PelionEdgeCoreClientAPI: MGMT Connecting to: " + this.m_edge_core_ws_mgmt_uri);
 
                             // connect MGMT 
                             this.m_client_mgmt = new JsonRpcClientNettyWebSocket(this.m_edge_core_ws_mgmt_uri);
@@ -116,8 +116,8 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                         this.m_connected = true;
 
                         // DEBUG
-                        this.errorLogger().warning("PelionEdgeCoreClientAPI: PT CONNECTED: " + this.m_edge_core_ws_pt_uri);
-                        this.errorLogger().warning("PelionEdgeCoreClientAPI: MGMT CONNECTED: " + this.m_edge_core_ws_mgmt_uri);
+                        this.errorLogger().warning("PelionEdgeCoreClientAPI: PT WS CONNECTED: " + this.m_edge_core_ws_pt_uri);
+                        this.errorLogger().warning("PelionEdgeCoreClientAPI: MGMT WS CONNECTED: " + this.m_edge_core_ws_mgmt_uri);
                     }
                     catch (IOException ioex) {
                         // Wait for a bit and try again
@@ -142,7 +142,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                     this.m_client_pt.close();
                 }
                 catch (IOException ex) {
-                    this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception in PT disconnect(): " + ex.getMessage());
+                    this.errorLogger().info("PelionEdgeCoreClientAPI: Exception in PT disconnect(): " + ex.getMessage());
                 }
             }
             
@@ -152,7 +152,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                     this.m_client_mgmt.close();
                 }
                 catch (IOException ex) {
-                    this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception in MGMT disconnect(): " + ex.getMessage());
+                    this.errorLogger().info("PelionEdgeCoreClientAPI: Exception in MGMT disconnect(): " + ex.getMessage());
                 }
             }
             
@@ -255,63 +255,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     // register device
     public Map registerDevice(Map device) {
         // DEBUG
-        this.errorLogger().info("registerDevice(Edge): Device: " + device);
-        
-        //
-        // Conversion should match this:
-        /*
- 
-        FROM
-            {  
-               path=/3303/0/5700,
-               uom=Temperature-1,
-               rw=R,
-               type=Float,
-               value=0.00
-            },
-            {  
-               path=/3303/1/5700,
-               uom=Temperature-2,
-               rw=R,
-               type=Float,
-               value=0.00
-            },
-            {  
-               path=/3308/0/5900,
-               uom=SetPoint,
-               rw=RW,
-               type=Float,
-               value=0.00
-            }
-         
-        TO
-            params = {
-                deviceId: <insert endpoint_name here>,
-                objects: [{
-                    objectId: 3303,
-                    objectInstances: [{
-                        objectInstanceId: 0,
-                        resources: [{
-                            resourceId: 5700,
-                            operations: OPERATIONS.READ,
-                            type: 'float',
-                            value: <insert value here>
-                        }]
-                    }]
-                }, {
-                    objectId: 3308,
-                    objectInstances: [{
-                        objectInstanceId: 0,
-                        resources: [{
-                            resourceId: 5900,
-                            operations: OPERATIONS.READ | OPERATIONS.WRITE,
-                            type: 'float',
-                            value: <insert value here>
-                        }]
-                    }]
-                }]
-            };
-        */
+        //this.errorLogger().info("registerDevice(Edge): Device: " + device);
         
         // objects list
         HashMap<String,Object> objects = new HashMap<>();
@@ -394,8 +338,8 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
             req.put("objects",objects_list);
 
             // DEBUG
-            this.errorLogger().info("registerDevice(Edge): Input JSON: " + resources);
-            this.errorLogger().info("registerDevice(Edge): Converted JSON: " + req);
+            //this.errorLogger().info("registerDevice(Edge): Input JSON: " + resources);
+            //this.errorLogger().info("registerDevice(Edge): Converted JSON: " + req);
 
             // call to register the device...
             String reply =  this.invokeRPCWithResult(this.m_client_pt,this.createRequest("device_register", req));

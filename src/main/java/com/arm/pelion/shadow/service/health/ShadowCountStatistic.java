@@ -49,8 +49,13 @@ public class ShadowCountStatistic extends BaseValidatorClass implements Runnable
 
     // WORKER: query how many device shadows we currently have
     private int checkDeviceShadowCount() {
-        Orchestrator o = this.m_provider.getOrchestrator();
-        this.m_value = (Integer)o.getMbedEdgeCoreServiceProcessor().getDB().getShadowCount();
+        try {
+            Orchestrator o = this.m_provider.getOrchestrator();
+            this.m_value = (Integer)o.getMbedEdgeCoreServiceProcessor().getDB().getShadowCount();
+        }
+        catch (Exception ex) {
+            this.m_value = 0;
+        }
         return (int)this.m_value;
     }
 }
