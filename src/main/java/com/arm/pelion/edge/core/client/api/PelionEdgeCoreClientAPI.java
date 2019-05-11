@@ -32,7 +32,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -252,13 +254,8 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     
     // register device
     public Map registerDevice(Map device) {
-        return this.upsert("device_register",device,null);
-    }
-    
-    // upsert method
-    private Map upsert(String rpc_command,Map device,Object new_value) {
         // DEBUG
-        this.errorLogger().info("upsert(Edge): Device: " + device);
+        this.errorLogger().info("registerDevice(Edge): Device: " + device);
         
         //
         // Conversion should match this:
@@ -356,14 +353,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                     HashMap<String,Object> resource = new HashMap<>();
                     resource.put("resourceId",rid);
                     resource.put("type",this.convertType((String)entry.get("type")));
-                    if (new_value != null) {
-                        // use updated value
-                        resource.put("value",new_value);
-                    }
-                    else {
-                        // use the default
-                        resource.put("value",entry.get("value"));
-                    }
+                    resource.put("value",this.encodeValue(entry.get("value")));
                     resource.put("operations",this.convertRWPermsToRWOperations((String)entry.get("rw")));
                     res.add(resource);
                 }
@@ -381,14 +371,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                     HashMap<String,Object> resource = new HashMap<>();
                     resource.put("resourceId",rid);
                     resource.put("type",this.convertType((String)entry.get("type")));
-                    if (new_value != null) {
-                        // use updated value
-                        resource.put("value",new_value);
-                    }
-                    else {
-                        // use the default
-                        resource.put("value",entry.get("value"));
-                    }
+                    resource.put("value",this.encodeValue(entry.get("value")));
                     resource.put("operations",this.convertRWPermsToRWOperations((String)entry.get("rw")));
                     res.add(resource);
                 }
@@ -411,11 +394,11 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
             req.put("objects",objects_list);
 
             // DEBUG
-            this.errorLogger().info("upsert: Input JSON: " + resources);
-            this.errorLogger().info("upsert: Converted JSON: " + req);
+            this.errorLogger().info("registerDevice(Edge): Input JSON: " + resources);
+            this.errorLogger().info("registerDevice(Edge): Converted JSON: " + req);
 
             // call to register the device...
-            String reply =  this.invokeRPCWithResult(this.m_client_pt,this.createRequest(rpc_command, req));
+            String reply =  this.invokeRPCWithResult(this.m_client_pt,this.createRequest("device_register", req));
             if (reply != null) {                
                 // get the mbed device ID and save it...
                 String id = this.getPelionDeviceIDForDeviceName((String)device.get("ep"));
@@ -427,7 +410,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
         }
         else {
             // non-mapped EdgeX resources - so unable to create new device
-            this.errorLogger().warning("upsert: FAILED: Unable to map EdgeX resources to LWM2M: " + device);
+            this.errorLogger().warning("registerDevice(Edge): FAILED: Unable to map EdgeX resources to LWM2M: " + device);
             return null;
         }
     }
@@ -546,14 +529,80 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
         // DEBUG
         this.errorLogger().warning("PelionEdgeCoreClientAPI: sendObservation: EP: " + ep + " URI: " + uri + " VALUE: " + value);
         
-        // XXX craft message to write a value via PT...
+        // Parse the URI
+        Integer oid = this.getObjectIdFromURI(uri);
+        Integer oiid = this.getObjectInstanceIdFromURI(uri);
+        Integer rid = this.getResourceIdFromURI(uri);
         
-        return true;
+        // create the objects JSON
+        HashMap<String,Object> object = new HashMap<>();
+        
+        // create the object instance
+        object.put("objectId",oid);
+        
+        ArrayList<HashMap<String,Object>> objectInstances = new ArrayList<>();
+        HashMap<String,Object> instance = new HashMap<>();
+        
+        instance.put("objectInstanceId",oiid);
+        
+        ArrayList<HashMap<String,Object>> resources = new ArrayList<>();
+        HashMap<String,Object> resource = new HashMap<>();
+        
+        resource.put("resourceId",rid);  
+        resource.put("value",this.encodeValue(value));
+        
+        resources.add(resource);
+        
+        instance.put("resources",resources);
+        objectInstances.add(instance);
+        
+        object.put("objectInstances",objectInstances);
+                
+        ArrayList<HashMap<String,Object>> objects = new ArrayList<>();
+        objects.add(object);
+        
+        // craft message to write a value via PT...
+        HashMap<String,Object> req = new HashMap<>();
+        req.put("deviceId",ep);
+        req.put("objects",objects);
+        
+        // DEBUG
+        //this.errorLogger().warning("sendObservation: REQUEST: " + req);
+        
+        // make the call to PT to update the value
+        return this.invokeRPC(this.m_client_pt,this.createRequest("write", req));
+    }
+    
+    // encode the value to Base64 
+    private String encodeValue(Object value) {
+        String encoded_value = null;
+        
+        if (value instanceof Integer) {
+            int i = ((Integer)value);
+            encoded_value = Base64.getEncoder().encodeToString(BigInteger.valueOf(i).toByteArray());
+        }
+        if (value instanceof String) {
+            encoded_value = Base64.getEncoder().encodeToString(((String)value).getBytes());
+        }
+        if (value instanceof Float) {
+            float f = ((Float)value);
+            encoded_value = Base64.getEncoder().encodeToString(("" + f).getBytes());
+        }
+        if (value instanceof Double) {
+            double d = ((Double)value);
+            encoded_value = Base64.getEncoder().encodeToString(("" + d).getBytes());
+        }
+        return encoded_value;
     }
     
     // get the object id from the URI
     private Integer getObjectIdFromURI(String uri) {
         return Integer.parseInt(this.getURIField(0,uri));
+    }
+    
+     // get the object instance id from the URI
+    private Integer getObjectInstanceIdFromURI(String uri) {
+        return Integer.parseInt(this.getURIField(1,uri));
     }
     
     // get the resource id from the URI
