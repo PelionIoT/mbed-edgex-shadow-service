@@ -34,6 +34,7 @@ Main.class
 com/arm/pelion/shadow/service/transport/MQTTMessage.class
 com/arm/pelion/shadow/service/json/JSONGenerator.class
 com/arm/pelion/shadow/service/json/JSONParser.class
+com/arm/pelion/shadow/service/health/EdgeCoreWSConnectionValidator.class
 com/arm/pelion/shadow/service/json/JSONParser$1.class
 com/arm/pelion/shadow/service/interfaces/DeviceShadowProcessorInterface.class
 com/arm/pelion/shadow/service/health/HealthStatistic.class
@@ -42,7 +43,6 @@ com/arm/pelion/shadow/service/db/mbedDeviceShadowDatabase.class
 com/arm/pelion/shadow/service/core/ErrorLogger.class
 com/arm/pelion/shadow/service/health/ShadowCountStatistic.class
 com/arm/pelion/shadow/service/loggerservlet/LoggerWebSocketServlet.class
-com/arm/pelion/shadow/service/health/DatabaseValidator.class
 com/arm/pelion/shadow/service/processors/pelion/PelionShadowServiceDeviceManager.class
 com/arm/pelion/shadow/service/core/Transport$ReceiveListener.class
 com/arm/pelion/api/PelionDeviceAPI.class

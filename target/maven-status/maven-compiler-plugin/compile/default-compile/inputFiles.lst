@@ -9,7 +9,6 @@
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/preferences/PreferenceManager.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/json/JSONParser.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/health/HealthCheckServiceProvider.java
-/Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/health/DatabaseValidator.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/loggerservlet/LoggerTracker.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/transport/MQTTMessage.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/health/interfaces/HealthCheckServiceInterface.java
@@ -30,6 +29,7 @@
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/health/MemoryStatistic.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/api/PelionDeviceAPI.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/transport/PelionHostnameVerifier.java
+/Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/health/EdgeCoreWSConnectionValidator.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/health/ShadowCountStatistic.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/coordinator/Orchestrator.java
 /Users/douans01/NetBeansProjects/mbed-edgex-shadow-service/src/main/java/com/arm/pelion/shadow/service/health/BaseValidatorClass.java
