@@ -121,14 +121,14 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                     }
                     catch (IOException ioex) {
                         // Wait for a bit and try again
-                        this.errorLogger().warning("PelionEdgeCoreClientAPI: Connection retry: " + ioex.getMessage());
+                        this.errorLogger().info("PelionEdgeCoreClientAPI: Connection retry: " + ioex.getMessage());
                         Utils.waitForABit(this.errorLogger(), 2500);
                     }
                 }
             }
         }
         catch (Exception ex) {
-            this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception in connect(): " + ex.getMessage());
+            this.errorLogger().info("PelionEdgeCoreClientAPI: Exception in connect(): " + ex.getMessage());
         }
         return this.m_connected;
     }
