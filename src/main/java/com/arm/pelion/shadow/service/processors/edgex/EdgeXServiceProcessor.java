@@ -173,8 +173,18 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
                         this.errorLogger().warning("EdgeXServiceProcessor: Device shadow creation for EdgeX device: " + edgex_message.get("device") + " SUCCESSFUL");   
                     }
                     else {
-                        // failed to create the device shadow
-                        this.errorLogger().warning("EdgeXServiceProcessor: Device shadow creation or EdgeX device: " + edgex_message.get("device") + " FAILED");
+                        // get the IP address for edgex
+                        String ip = this.preferences().valueOf("edgex_ip_address");
+                        
+                        // Is the EdgeX IP address configured?
+                        if (ip != null && ip.contains("EdgeX_IP") == true) {
+                            // not configured 
+                            this.errorLogger().warning("EdgeXServiceProcessor: EdgeX IP address not configured. Unable to create shadow for device: " + edgex_message.get("device"));
+                        }
+                        else {
+                            // failed to create the device shadow
+                            this.errorLogger().warning("EdgeXServiceProcessor: Device shadow creation or EdgeX device: " + edgex_message.get("device") + " FAILED");
+                        }
                     }
                 }
 

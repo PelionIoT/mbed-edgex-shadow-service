@@ -51,7 +51,7 @@ public class EdgeCoreWSConnectionValidator extends BaseValidatorClass implements
         }
         else {
             // DEBUG
-            this.errorLogger().warning("EdgeCoreWSConnectionValidator: Edge-Core WS connections are DOWN.");
+            this.errorLogger().info("EdgeCoreWSConnectionValidator: Edge-Core WS connections are DOWN.");
             this.m_value = (Boolean)false;
         }
         

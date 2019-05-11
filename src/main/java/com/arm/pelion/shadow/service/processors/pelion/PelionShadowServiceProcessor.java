@@ -410,8 +410,22 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
             }
        }
        else {
-           // HTTP error
-           this.errorLogger().warning("PelionShadowServiceProcessor: metadata lookup FAILED... Response Code: " + this.m_http.getLastResponseCode() + " URL: " + url);
+           // get the IP address for edgex
+           String ip = this.preferences().valueOf("edgex_ip_address");
+           
+           // Is the EdgeX IP address configured?
+           if (ip != null && ip.contains("EdgeX_IP") == true) {
+               // not configured 
+               this.errorLogger().warning("PelionShadowServiceProcessor: EdgeX IP address not configured. Unable to lookup device details");
+           }
+           else if (this.m_http.getLastResponseCode() == 599) {
+               // timed out... wrong IP address for EdgeX?
+               this.errorLogger().warning("PelionShadowServiceProcessor: EdgeX not responding (IP address wrong?). Unable to lookup device details");
+           }
+           else {
+                // HTTP error
+                this.errorLogger().warning("PelionShadowServiceProcessor: metadata lookup FAILED... Response Code: " + this.m_http.getLastResponseCode() + " URL: " + url);
+           }
        }
        return null;
     }
