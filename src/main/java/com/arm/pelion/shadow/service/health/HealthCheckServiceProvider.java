@@ -71,8 +71,8 @@ public class HealthCheckServiceProvider extends BaseClass implements HealthCheck
     // initialize our stats
     @Override
     public void initialize() { 
-        // Database validator
-        this.m_validator_list.add(new DatabaseValidator(this));
+        // Edge-Core WS validator
+        this.m_validator_list.add(new EdgeCoreWSConnectionValidator(this));
         
         // Shadow Count Statistic
         this.m_validator_list.add(new ShadowCountStatistic(this));

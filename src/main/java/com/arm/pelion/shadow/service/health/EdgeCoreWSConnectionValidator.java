@@ -1,6 +1,6 @@
 /**
- * @file DatabaseValidator.java
- * @brief Pelion Database Validation
+ * @file EdgeCoreWSConnectionValidator.java
+ * @brief Edge-core WS connection validation
  * @author Doug Anson
  * @version 1.0
  * @see
@@ -26,13 +26,13 @@ import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.health.interfaces.HealthCheckServiceInterface;
 
 /**
- * This class periodically checks pelion-bridge's Database connection
+ * This class periodically checks our edge-core WS connection
  *
  * @author Doug Anson
  */
-public class DatabaseValidator extends BaseValidatorClass implements Runnable {
+public class EdgeCoreWSConnectionValidator extends BaseValidatorClass implements Runnable {
     // default constructor
-    public DatabaseValidator(HealthCheckServiceInterface provider) {
+    public EdgeCoreWSConnectionValidator(HealthCheckServiceInterface provider) {
         super(provider,"database");
         this.m_value = (Boolean)false;      // boolean value for this validator
     }   
@@ -41,17 +41,17 @@ public class DatabaseValidator extends BaseValidatorClass implements Runnable {
     @Override
     protected void validate() {
         // DEBUG
-        this.errorLogger().info("DatabaseValidator: Validating Database Connections...");
+        this.errorLogger().info("EdgeCoreWSConnectionValidator: Validating Edge-Core WS Connections...");
 
-        // validate the database connections
-        if (this.validateDatabaseConnection() == true) {
+        // validate the edge-core WS connections
+        if (this.validateConnections() == true) {
             // DEBUG
-            this.errorLogger().info("DatabaseValidator: Database Connections OK.");
+            this.errorLogger().info("EdgeCoreWSConnectionValidator: Edge-Core WS connections OK.");
             this.m_value = (Boolean)true;
         }
         else {
             // DEBUG
-            this.errorLogger().warning("DatabaseValidator: Database connection is DOWN.");
+            this.errorLogger().warning("EdgeCoreWSConnectionValidator: Edge-Core WS connections are DOWN.");
             this.m_value = (Boolean)false;
         }
         
@@ -59,8 +59,8 @@ public class DatabaseValidator extends BaseValidatorClass implements Runnable {
         this.updateStatisticAndNotify();
     }
 
-    // WORKER: validate the Database Connections
-    private boolean validateDatabaseConnection() {
+    // WORKER: validate the edge-core WS Connections
+    private boolean validateConnections() {
         try {
             Orchestrator o = this.m_provider.getOrchestrator();
             return o.getMbedEdgeCoreServiceProcessor().validateUnderlyingConnection();
