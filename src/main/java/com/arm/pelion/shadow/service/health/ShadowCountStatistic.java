@@ -22,6 +22,7 @@
  */
 package com.arm.pelion.shadow.service.health;
 
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.health.interfaces.HealthCheckServiceInterface;
 
 /**
@@ -48,9 +49,8 @@ public class ShadowCountStatistic extends BaseValidatorClass implements Runnable
 
     // WORKER: query how many device shadows we currently have
     private int checkDeviceShadowCount() {
-        //PelionProcessor p = (PelionProcessor)this.m_provider.getPelionProcessor();
-        //return p.orchestrator().getShadowCount();
-        // XXXX
+        Orchestrator o = this.m_provider.getOrchestrator();
+        this.m_value = (Integer)o.getMbedEdgeCoreServiceProcessor().getDB().getShadowCount();
         return (int)this.m_value;
     }
 }

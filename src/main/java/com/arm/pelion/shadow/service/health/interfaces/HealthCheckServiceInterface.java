@@ -22,6 +22,7 @@
  */
 package com.arm.pelion.shadow.service.health.interfaces;
 
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.health.HealthStatistic;
 import com.arm.pelion.shadow.service.preferences.PreferenceManager;
@@ -49,4 +50,7 @@ public interface HealthCheckServiceInterface {
     
     // descriptions JSON
     public String descriptionsJSON();
+    
+    // get the orchestrator
+    public Orchestrator getOrchestrator();
 }

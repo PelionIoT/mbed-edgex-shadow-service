@@ -22,6 +22,7 @@
  */
 package com.arm.pelion.shadow.service.health;
 
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.health.interfaces.HealthCheckServiceInterface;
 
 /**
@@ -48,9 +49,7 @@ public class ThreadCountStatistic extends BaseValidatorClass implements Runnable
 
     // WORKER: query how many active threads we currently have
     private int getActiveThreadCount() {
-        // PelionProcessor p = (PelionProcessor)this.m_provider.getPelionProcessor();
-        // return p.getActiveThreadCount();
-        // XXXX
-        return 1;
+        Orchestrator o = this.m_provider.getOrchestrator();
+        return o.getActiveThreadCount();
     }
 }

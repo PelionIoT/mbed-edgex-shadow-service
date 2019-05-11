@@ -188,4 +188,10 @@ public class HealthCheckServiceProvider extends BaseClass implements HealthCheck
             Utils.waitForABit(this.errorLogger(),this.m_health_status_update_ms);
         }
     }
+    
+    // get the orchestrator
+    @Override
+    public Orchestrator getOrchestrator() {
+        return this.m_orchestrator;
+    }
 }

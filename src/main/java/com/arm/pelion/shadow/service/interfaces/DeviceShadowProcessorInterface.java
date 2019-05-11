@@ -24,6 +24,7 @@ package com.arm.pelion.shadow.service.interfaces;
 
 import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
 import com.arm.pelion.rest.client.api.PelionRestClientAPI;
+import com.arm.pelion.shadow.service.db.mbedDeviceShadowDatabase;
 import com.arm.pelion.shadow.service.processors.edgex.EdgeXServiceProcessor;
 import java.util.Map;
 
@@ -48,7 +49,7 @@ public interface DeviceShadowProcessorInterface {
     public void closedown();
     
     // validate the underlying connections
-    public void validateUnderlyingConnection();
+    public boolean validateUnderlyingConnection();
     
     // send an observation
     public boolean sendObservation(Map edgex_message);
@@ -73,4 +74,7 @@ public interface DeviceShadowProcessorInterface {
     
     // get the Pelion edge core Client API
     PelionEdgeCoreClientAPI getPelionEdgeCoreClientAPI();
+    
+    // get the database interface
+    public mbedDeviceShadowDatabase getDB();
 }

@@ -66,6 +66,11 @@ public class mbedDeviceShadowDatabase extends BaseClass {
         this.m_disable_cache = !(preference_manager.booleanValueOf("cache_enabled"));
     }
     
+    // get the db shadow count
+    public int getShadowCount() {
+        return this.m_id_map_db.size();
+    }
+    
     // remove the cache files
     public void clearCacheFiles() {
         try {

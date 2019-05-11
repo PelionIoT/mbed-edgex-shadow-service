@@ -84,8 +84,14 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     
     // validate the underlying connection
     @Override
-    public void validateUnderlyingConnection() {
-        this.m_device_manager.validateUnderlyingConnection();
+    public boolean validateUnderlyingConnection() {
+        return this.m_device_manager.validateUnderlyingConnection();
+    }
+    
+    // get the shadow DB
+    @Override
+    public mbedDeviceShadowDatabase getDB() {
+        return this.m_db;
     }
     
     // create the device shadow

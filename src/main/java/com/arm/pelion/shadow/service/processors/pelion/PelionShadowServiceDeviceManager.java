@@ -50,8 +50,8 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
     }
     
     // validate the underlying connection
-    public void validateUnderlyingConnection() {
-        this.connect();
+    public boolean validateUnderlyingConnection() {
+        return this.connect();
     }
     
     // connect the API

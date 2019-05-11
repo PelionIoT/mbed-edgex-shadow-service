@@ -22,6 +22,7 @@
  */
 package com.arm.pelion.shadow.service.health;
 
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.health.interfaces.HealthCheckServiceInterface;
 
 /**
@@ -60,6 +61,7 @@ public class DatabaseValidator extends BaseValidatorClass implements Runnable {
 
     // WORKER: validate the Database Connections
     private boolean validateDatabaseConnection() {
-        return true;
+        Orchestrator o = this.m_provider.getOrchestrator();
+        return o.getMbedEdgeCoreServiceProcessor().validateUnderlyingConnection();
     }
 }
