@@ -229,7 +229,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         boolean validated = false;
 
         // First we validate the mbed device via mCS
-        this.errorLogger().info("PelionShadowServiceProcessor: Validating that mCS device is still in existance: " + mbed_id);
+        this.errorLogger().info("PelionShadowServiceProcessor: Validating that mbed-edge device is still in existance: " + mbed_id);
         if (this.validateMbedDevice(mbed_id) == true) {
             // now validate the EdgeX device via EdgeX
             validated = this.validateEdgeXDevice(edgex_name);
@@ -365,7 +365,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
                 // DEBUG
                 if (created == true) {
                     // Successfully cache the shadow!
-                    this.errorLogger().warning("PelionShadowServiceProcessor: SUCCESS. mbed shadow: " + mbed_id + " for EdgeX device: " + edgex_dev_name + " successfully cached");
+                    this.errorLogger().info("PelionShadowServiceProcessor: SUCCESS. mbed shadow: " + mbed_id + " for EdgeX device: " + edgex_dev_name + " successfully cached");
                 }
                 else {
                     // Unable to cache the shadow
