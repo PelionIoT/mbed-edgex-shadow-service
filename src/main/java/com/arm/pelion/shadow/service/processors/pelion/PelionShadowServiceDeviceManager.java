@@ -100,18 +100,26 @@ public class PelionShadowServiceDeviceManager extends BaseClass implements Runna
     
     // create the device
     public Map createDevice(Map device) {
-        // DEBUG
-        this.errorLogger().info("PelionShadowServiceDeviceManager: createDevice: " + device);
-        
-        // register the device
-        device = this.m_api.registerDevice(device);
-        if (device != null) {
-            // success!
-            this.errorLogger().info("PelionShadowServiceDeviceManager: createDevice: SUCCESS: " + device);
+        if (this.m_api.isConnected() == true) {
+            // DEBUG
+            this.errorLogger().info("PelionShadowServiceDeviceManager: createDevice: " + device);
+
+            // register the device
+            device = this.m_api.registerDevice(device);
+            if (device != null) {
+                // success!
+                this.errorLogger().info("PelionShadowServiceDeviceManager: createDevice: SUCCESS: " + device);
+            }
+            else {
+                // failure
+                this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: FAILURE: " + device);
+                return null;
+            }
         }
         else {
-            // failure
-            this.errorLogger().warning("PelionShadowServiceDeviceManager: createDevice: FAILURE: " + device);
+            // no connection
+            this.errorLogger().warning("PelionShadowServiceDeviceManager: API not connected yet. Unable to create shadow...");
+            return null;
         }
        
         // return the device

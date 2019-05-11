@@ -167,14 +167,14 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
                 // is the device shadowed already?
                 if (this.m_msp.deviceShadowed(edgex_message) == false) {
                     // first we have to create the device shadow
-                    this.errorLogger().info("EdgeXServiceProcessor: Creating device shadow for EdgeX ID: " + edgex_message.get("id"));
+                    this.errorLogger().info("EdgeXServiceProcessor: Creating device shadow for EdgeX device: " + edgex_message.get("device"));
                     if (this.m_msp.createDeviceShadow(edgex_message) == true) {
                         // now that device shadow is created... send an observation for it
-                        this.errorLogger().info("EdgeXServiceProcessor: Creating device shadow for EdgeX ID: " + edgex_message.get("id") + " SUCCESS");   
+                        this.errorLogger().warning("EdgeXServiceProcessor: Device shadow creation for EdgeX device: " + edgex_message.get("device") + " SUCCESSFUL");   
                     }
                     else {
                         // failed to create the device shadow
-                        this.errorLogger().warning("EdgeXServiceProcessor: Creating device shadow for EdgeX ID: " + edgex_message.get("id") + " FAILED");
+                        this.errorLogger().warning("EdgeXServiceProcessor: Device shadow creation or EdgeX device: " + edgex_message.get("device") + " FAILED");
                     }
                 }
 

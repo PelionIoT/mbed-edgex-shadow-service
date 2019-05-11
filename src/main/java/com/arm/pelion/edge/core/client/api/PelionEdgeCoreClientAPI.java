@@ -47,7 +47,10 @@ import org.kurento.jsonrpc.message.Response;
  * Pelion edge core protocol translator client API for Java
  * @author Doug Anson
  */
-public class PelionEdgeCoreClientAPI extends BaseClass {    
+public class PelionEdgeCoreClientAPI extends BaseClass {  
+    // try this many times to connect to the underlying WS service
+    private static final int MAX_CONNECTION_ATTEMPTS = 10;
+    
     // mbed-edge core PT config
     private String m_edge_core_ws_pt_uri = null;
     private String m_edge_core_ws_mgmt_uri = null;
@@ -87,7 +90,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
     public synchronized boolean connect() {
         try {
             if (!this.m_connected) {
-                for(int i=0;i<5 && this.m_connected == false;++i) {
+                for(int i=0;i<MAX_CONNECTION_ATTEMPTS && this.m_connected == false;++i) {
                     try {
                         if (this.m_client_pt == null) {
                             // Connect PT
@@ -155,13 +158,13 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                     this.errorLogger().info("PelionEdgeCoreClientAPI: Exception in MGMT disconnect(): " + ex.getMessage());
                 }
             }
-            
-            // we are disconnected
-            this.m_connected = false;
-            this.m_client_pt = null;
-            this.m_client_mgmt = null;
-            this.m_registered = false;
         }
+        
+        // we are disconnected
+        this.m_connected = false;
+        this.m_client_pt = null;
+        this.m_client_mgmt = null;
+        this.m_registered = false;
     }
     
     // is connected?
@@ -595,6 +598,9 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
         else {
             // failure
             this.errorLogger().warning("PelionEdgeCoreClientAPI: PT registration FAILURE");
+            
+            // disconnect
+            this.disconnect();
         }
         return status;
     }

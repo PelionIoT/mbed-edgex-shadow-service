@@ -97,17 +97,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
     // create the device shadow
     private Map createShadow(Map mbed_device) {
         // create the device shadow in pelion
-        mbed_device = this.m_device_manager.createDevice(mbed_device);
-        if (mbed_device != null) {
-            this.errorLogger().info("PelionShadowServiceProcessor: Created Pelion device: " + mbed_device);
-            
-            // return the created device
-            return mbed_device;
-        }
-        else {
-            this.errorLogger().warning("PelionShadowServiceProcessor: ERROR creating Pelion device: " + mbed_device);
-            return null;
-        }
+        return this.m_device_manager.createDevice(mbed_device);
     }
     
     // remove the device shadow
@@ -335,11 +325,11 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
         else {
             if (mbed_device != null) {
                 // ERROR in creating mbed device shadow
-                this.errorLogger().warning("PelionShadowServiceProcessor: Unable to create mbed device shadow for: " + mbed_device);
+                this.errorLogger().info("PelionShadowServiceProcessor: Unable to create mbed device shadow for: " + mbed_device);
             }
             else {
-                // ERROR in creating mbed device shadow
-                this.errorLogger().warning("PelionShadowServiceProcessor: Unable to create mbed device (no device map)");
+                // ERROR in creating mbed device shadow (no map)
+                this.errorLogger().info("PelionShadowServiceProcessor: Unable to create mbed device (no device map)");
             }
         }
         return null;
@@ -380,7 +370,7 @@ public class PelionShadowServiceProcessor extends BaseClass implements DeviceSha
             }
             else {
                 // Unable to create shadow - no device map
-                this.errorLogger().warning("PelionShadowServiceProcessor: Unable to create shadow for EdgeX device: " + edgex_dev_name + " (no device map)");
+                this.errorLogger().info("PelionShadowServiceProcessor: Unable to create shadow for EdgeX device: " + edgex_dev_name + " (no device map)");
             }
         }
 
