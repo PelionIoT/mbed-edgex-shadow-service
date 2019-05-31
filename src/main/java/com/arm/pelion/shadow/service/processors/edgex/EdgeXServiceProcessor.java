@@ -36,6 +36,10 @@ import java.util.Map;
 import org.fusesource.mqtt.client.QoS;
 import org.fusesource.mqtt.client.Topic;
 import com.arm.pelion.shadow.service.interfaces.DeviceShadowProcessorInterface;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Base64;
 
 /**
  * EdgeX Service Processor
@@ -353,5 +357,73 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
         
         // return the value
         return value;
+    }
+    
+    // convert the Mbed Encoded payload to its native Java type
+    private Object convertMbedEncodedPayloadToNativeType(String b64_payload,String edgex_name,String edgex_resource_name) {
+        return (Object)b64_payload;
+        
+        /*
+        byte decoded[] = Base64.getDecoder().decode(b64_payload);   
+        Object value = null;
+        
+        // XXX this isn't correct
+        if (b64_payload != null && b64_payload.length() > 0) {
+            try {
+                Float f = ByteBuffer.wrap(decoded).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+                value = (Object)f;
+            }
+            catch (Exception ex) {
+                try {
+                    BigInteger bi = new BigInteger(decoded);
+                    value = (Object)bi;
+                }
+                catch (Exception ex1) {
+                    try {
+                        String str = new String(decoded);
+                        value = (String)str;
+                    }
+                    catch (Exception ex2) {
+                        // unable to map
+                        this.errorLogger().warning("convertMbedEncodedPayloadToNativeType: unable to find native type: " + b64_payload);
+                    }
+                }
+            }
+        }
+        return value;
+        */
+    }
+    
+    // process a resource write request
+    public boolean processWriteRequest(Map mbed_request) {
+        try {
+            // Pull the fields for the request
+            Map params = (Map)mbed_request.get("params");
+            Map uri = (Map)params.get("uri");
+            String deviceId = (String)uri.get("deviceId");
+            Integer objectId = (Integer)uri.get("objectId");
+            Integer objectInstanceId = (Integer)uri.get("objectInstanceId");
+            Integer resourceId = (Integer)uri.get("resourceId");
+            String mbed_uri = "/" + objectId + "/" + objectInstanceId + "/" + resourceId;
+            Integer operation = (Integer)params.get("operation");
+            String method = (String)params.get("method");
+            String b64_encoded_value = (String)params.get("value");
+
+            // convert to and EdgeX format
+            String edgex_resource = this.m_msp.mapMbedResourcePathToEdgeXResource(mbed_uri);
+            String edgex_name = deviceId; // direct mapping
+            Object edgex_value = this.convertMbedEncodedPayloadToNativeType(b64_encoded_value,edgex_name,edgex_resource);
+            
+            // DEBUG
+            this.errorLogger().warning("EdgeXServiceProcessor: Write Request: Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value);
+        
+            // return our status
+            return true;
+        }
+        catch (Exception ex) {
+            // error processing write request
+            this.errorLogger().warning("EdgeXServiceProcessor: Exception: " + ex.getMessage() + " in processWriteRequest()", ex);
+            return false;
+        }
     }
 }

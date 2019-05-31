@@ -17,20 +17,20 @@ limitations under the License.
 -->
 <!--
  To produce reports, use the reporting profile, for example: mvn -Preporting clean site
- You may need to use the -U option to update your environment if you get an error.  
+ You may need to use the -U option to update your environment if you get an error.
  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-parent</artifactId>
-    <version>35</version>
+    <version>47</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <groupId>commons-codec</groupId>
   <artifactId>commons-codec</artifactId>
   <!-- Remember to update the version in default.properties as well -->
-  <version>1.10</version>
+  <version>1.12</version>
   <name>Apache Commons Codec</name>
   <inceptionYear>2002</inceptionYear>
   <description>
@@ -39,18 +39,15 @@ limitations under the License.
      widely used encoders and decoders, the codec package also maintains a
      collection of phonetic encoding utilities.
   </description>
-  <prerequisites>
-    <maven>3.0.0</maven>
-  </prerequisites>  
   <url>http://commons.apache.org/proper/commons-codec/</url>
   <issueManagement>
     <system>jira</system>
     <url>http://issues.apache.org/jira/browse/CODEC</url>
   </issueManagement>
   <scm>
-    <connection>scm:svn:http://svn.apache.org/repos/asf/commons/proper/codec/trunk</connection>
-    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/commons/proper/codec/trunk</developerConnection>
-    <url>http://svn.apache.org/viewvc/commons/proper/codec/trunk</url>
+    <connection>scm:git:https://gitbox.apache.org/repos/asf?p=commons-codec.git</connection>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf?p=commons-codec.git</developerConnection>
+    <url>https://github.com/apache/commons-codec</url>
   </scm>
   <distributionManagement>
     <site>
@@ -96,7 +93,7 @@ limitations under the License.
       <id>ggregory</id>
       <email>ggregory@apache.org</email>
       <url>http://www.garygregory.com</url>
-      <timezone>-5</timezone>
+      <timezone>-7</timezone>
     </developer>
     <developer>
       <name>David Graham</name>
@@ -114,6 +111,11 @@ limitations under the License.
       <name>Thomas Neidhart</name>
       <id>tn</id>
       <email>tn@apache.org</email>
+    </developer>
+    <developer>
+      <name>Rob Tompkins</name>
+      <id>chtompki</id>
+      <email>chtompki@apache.org</email>
     </developer>
   </developers>
   <contributors>
@@ -206,22 +208,26 @@ limitations under the License.
       </roles>
     </contributor>
   </contributors>
-  <!-- Codec should depend on very little -->
+  <!-- Codec only has test dependencies ATM -->
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
   <properties>
-    <maven.compiler.source>1.6</maven.compiler.source>
-    <maven.compiler.target>1.6</maven.compiler.target>
+    <maven.compiler.source>1.7</maven.compiler.source>
+    <maven.compiler.target>1.7</maven.compiler.target>
     <commons.componentid>codec</commons.componentid>
-    <commons.release.version>1.10</commons.release.version>
-    <!-- The RC version used in the staging repository URL. -->
-    <commons.rc.version>RC1</commons.rc.version>
+    <commons.module.name>org.apache.commons.codec</commons.module.name>
     <commons.jira.id>CODEC</commons.jira.id>
     <commons.jira.pid>12310464</commons.jira.pid>
     <!-- Ensure copies work OK (can be removed later when this is in parent POM) -->
@@ -229,22 +235,72 @@ limitations under the License.
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <commons.encoding>UTF-8</commons.encoding>
     <checkstyle.header.file>${basedir}/LICENSE-header.txt</checkstyle.header.file>
+    <checkstyle.version>2.17</checkstyle.version>
+
+    <commons.jacoco.version>0.8.3</commons.jacoco.version>
+
+    <!-- generate report even if there are binary incompatible changes -->
+    <commons.japicmp.breakBuildOnBinaryIncompatibleModifications>false</commons.japicmp.breakBuildOnBinaryIncompatibleModifications>
+    <!-- 0.12.0 dies with a NullPointerException -->
+    <commons.japicmp.version>0.13.0</commons.japicmp.version>
+    <japicmp.skip>false</japicmp.skip>
+
+    <!-- Commons Release Plugin -->
+    <commons.bc.version>1.11</commons.bc.version>
+    <commons.rc.version>RC3</commons.rc.version>
+    <commons.release-plugin.version>1.5</commons.release-plugin.version>
+    <commons.release.isDistModule>true</commons.release.isDistModule>
+    <commons.distSvnStagingUrl>scm:svn:https://dist.apache.org/repos/dist/dev/commons/${commons.componentid}</commons.distSvnStagingUrl>
+    <commons.releaseManagerName>Rob Tompkins</commons.releaseManagerName>
+    <commons.releaseManagerKey>B6E73D84EA4FCC47166087253FAAD2CD5ECBB314</commons.releaseManagerKey>
   </properties>
   <build>
+    <defaultGoal>clean verify apache-rat:check clirr:check javadoc:javadoc</defaultGoal>
     <pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-scm-publish-plugin</artifactId>
+          <version>${commons.scm-publish.version}</version>
           <configuration>
             <ignorePathsToDelete>
               <ignorePathToDelete>archive**</ignorePathToDelete>
             </ignorePathsToDelete>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>com.github.siom79.japicmp</groupId>
+          <artifactId>japicmp-maven-plugin</artifactId>
+          <configuration>
+            <skip>false</skip>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>src/site/resources/.htaccess</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- Add Java 9 Automatic-Module-Name -->
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive combine.children="append">
+            <!-- Temporary fix, remove this after this has implemented in parent pom -->
+            <manifestEntries>
+              <Automatic-Module-Name>${commons.module.name}</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -257,26 +313,24 @@ limitations under the License.
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.4</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.5</version>
         <configuration>
           <descriptors>
-            <descriptor>src/main/assembly/bin.xml</descriptor>
-            <descriptor>src/main/assembly/src.xml</descriptor>
+            <descriptor>src/assembly/bin.xml</descriptor>
+            <descriptor>src/assembly/src.xml</descriptor>
           </descriptors>
           <tarLongFileMode>gnu</tarLongFileMode>
+        </configuration>
+      </plugin>
+      <!-- Allow use of mvn checkstyle:checkstyle. Must agree with reporting section below. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${checkstyle.version}</version>
+        <configuration>
+          <configLocation>${basedir}/checkstyle.xml</configLocation>
+          <enableRulesSummary>false</enableRulesSummary>
+          <headerFile>${basedir}/LICENSE-header.txt</headerFile>
         </configuration>
       </plugin>
     </plugins>
@@ -286,10 +340,7 @@ limitations under the License.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <!-- Use 2.9.1 instead of 2.10; 2.10 seems to scan the 'target' 
-        dir and wants license headers in .properties to be the header for 
-        Java files. -->
-        <version>2.9.1</version>
+        <version>${checkstyle.version}</version>
         <configuration>
           <configLocation>${basedir}/checkstyle.xml</configLocation>
           <enableRulesSummary>false</enableRulesSummary>
@@ -307,7 +358,7 @@ limitations under the License.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
-        <version>3.2</version>
+        <version>3.8</version>
         <configuration>
           <targetJdk>${maven.compiler.target}</targetJdk>
           <linkXref>true</linkXref>
@@ -319,7 +370,7 @@ limitations under the License.
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>2.5.5</version>
+	    <version>${commons.findbugs.version}</version>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -336,8 +387,29 @@ limitations under the License.
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>javancss-maven-plugin</artifactId>
-        <version>2.0</version>
+        <version>2.1</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>src/site/resources/.htaccess</exclude>
+          </excludes>
+        </configuration>
       </plugin>
     </plugins>
   </reporting>
+  <profiles>
+    <profile>
+      <id>java9+</id>
+      <activation>
+        <jdk>[9,)</jdk>
+      </activation>
+      <properties>
+        <!-- coverall version 4.3.0 does not work with java 9, see https://github.com/trautonen/coveralls-maven-plugin/issues/112 -->
+        <coveralls.skip>true</coveralls.skip>
+      </properties>
+    </profile>
+  </profiles>
 </project>

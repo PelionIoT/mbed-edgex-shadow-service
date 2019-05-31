@@ -38,18 +38,25 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.kurento.jsonrpc.JsonRpcHandler;
+import org.kurento.jsonrpc.Session;
+import org.kurento.jsonrpc.Transaction;
 import org.kurento.jsonrpc.client.JsonRpcClient;
 import org.kurento.jsonrpc.client.JsonRpcClientNettyWebSocket;
 import org.kurento.jsonrpc.message.Request;
 import org.kurento.jsonrpc.message.Response;
+import org.kurento.jsonrpc.message.ResponseError;
 
 /**
  * Pelion edge core protocol translator client API for Java
  * @author Doug Anson
  */
-public class PelionEdgeCoreClientAPI extends BaseClass {  
+public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler<Object> {  
     // try this many times to connect to the underlying WS service
     private static final int MAX_CONNECTION_ATTEMPTS = 10;
+    
+    // fake resources as RW to test out bidirectional path (default: false)
+    private static final boolean FAKE_RW_RESOURCES = true;
     
     // mbed-edge core PT config
     private String m_edge_core_ws_pt_uri = null;
@@ -114,6 +121,10 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                             this.m_client_mgmt = new JsonRpcClientNettyWebSocket(this.m_edge_core_ws_mgmt_uri);
                             this.m_client_mgmt.connect();
                         }
+                        
+                        // set callback processors
+                        this.m_client_pt.setServerRequestHandler(this);
+                        this.m_client_mgmt.setServerRequestHandler(this);
 
                         // PT + MGMT connected!!
                         this.m_connected = true;
@@ -320,6 +331,11 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
                     resource.put("type",this.convertType((String)entry.get("type")));
                     resource.put("value",this.encodeValue(entry.get("value")));
                     resource.put("operations",this.convertRWPermsToRWOperations((String)entry.get("rw")));
+                    
+                    // DEBUG
+                    this.errorLogger().warning("PelionEdgeCoreClientAPI: registerDevice: resource: " + resource);
+                    
+                    // add the resource
                     res.add(resource);
                 }
             }
@@ -454,6 +470,12 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
             }
             if (rw.equalsIgnoreCase("rwxd")) {
                 operations = Operations.READ | Operations.WRITE | Operations.EXECUTE | Operations.DELETE;
+            }
+            
+            // override default operational values for debugging bidirectional operations
+            if (FAKE_RW_RESOURCES == true) {
+                // debugging bidirectional operation... allow write and execute... 
+                operations = operations | Operations.WRITE | Operations.EXECUTE;
             }
         }
         return operations;
@@ -712,5 +734,109 @@ public class PelionEdgeCoreClientAPI extends BaseClass {
              reply = null;
         }
         return reply;
+    }
+
+    @Override
+    public void handleRequest(Transaction t, Request<Object> request) throws Exception {
+        boolean success = false;
+        try { 
+            // Convert the JSON request to a JSON Object
+            Map json = this.m_orchestrator.getJSONParser().parseJson(request.toString());
+            
+            // DEBUG
+            this.errorLogger().info("PelionEdgeCoreClientAPI: Write Request: " + json);
+            
+            // process the write request
+            success = this.m_orchestrator.getEdgeXServiceProcessor().processWriteRequest(json);
+            
+        }
+        catch (Exception ex) {
+            this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception: " + ex.getMessage() + " in handleRequest()...",ex);
+        }
+        
+        /*
+        // create the response and send it...
+        Response<Object> response = new Response<>();
+        ResponseError re = null;
+        String res = "ok";
+        if (success == false) {
+            re = new ResponseError(request.getId(),"error in processing write request");
+            res = null;
+        }
+        response.setId(request.getId());
+        response.setResult(res);
+        response.setError(re);
+        
+        // send the response
+        t.sendResponse(response);
+        */
+        t.sendVoidResponse();
+    }
+
+    @Override
+    public void afterConnectionEstablished(Session sn) throws Exception {
+    }
+
+    @Override
+    public void afterConnectionClosed(Session sn, String string) throws Exception {
+    }
+
+    @Override
+    public void handleTransportError(Session sn, Throwable thrwbl) throws Exception {
+    }
+
+    @Override
+    public void handleUncaughtException(Session sn, Exception excptn) {
+        
+    }
+
+    @Override
+    public Class<?> getHandlerType() {
+        return this.getClass();
+    }
+
+    @Override
+    public JsonRpcHandler<Object> withSockJS() {
+        return this;
+    }
+
+    @Override
+    public JsonRpcHandler<Object> withAllowedOrigins(String... strings) {
+        return this;
+    }
+
+    @Override
+    public JsonRpcHandler<Object> withInterceptors(Object... os) {
+        return this;
+    }
+
+    @Override
+    public boolean isSockJSEnabled() {
+        return false;
+    }
+
+    @Override
+    public List<String> allowedOrigins() {
+        return new ArrayList<String>();
+    }
+
+    @Override
+    public JsonRpcHandler<Object> withLabel(String string) {
+        return this;
+    }
+
+    @Override
+    public String getLabel() {
+        return "PelionEdgeCoreClientAPI";
+    }
+
+    @Override
+    public boolean isPingWatchdog() {
+        return false;
+    }
+
+    @Override
+    public List<Object> interceptors() {
+        return new ArrayList<Object>();
     }
 }

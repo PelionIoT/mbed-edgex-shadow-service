@@ -28,12 +28,12 @@
   <parent>
     <groupId>org.apache.httpcomponents</groupId>
     <artifactId>httpcomponents-client</artifactId>
-    <version>4.3.5</version>
+    <version>4.5.8</version>
   </parent>
   <artifactId>httpclient</artifactId>
   <name>Apache HttpClient</name>
   <description>
-   HttpComponents Client
+   Apache HttpComponents Client
   </description>
   <url>http://hc.apache.org/httpcomponents-client</url>
   <packaging>jar</packaging>
@@ -80,7 +80,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.8</version>
         <executions>
           <execution>
             <id>add-source</id>
@@ -97,12 +96,41 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <version>1.2.1</version>
+        <executions>
+          <execution>
+            <id>download-public-suffix-list</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://publicsuffix.org/list/effective_tld_names.dat</url>
+              <outputDirectory>${project.build.outputDirectory}/mozilla</outputDirectory>
+              <outputFileName>public-suffix-list.txt</outputFileName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
+            <id>default-jar</id>
+            <phase>package</phase>
             <goals>
+              <goal>jar</goal>
               <goal>test-jar</goal>
             </goals>
+            <configuration>
+              <archive combine.children="append">
+                <manifestEntries>
+                  <Automatic-Module-Name>org.apache.httpcomponents.httpclient</Automatic-Module-Name>
+                </manifestEntries>
+              </archive>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -114,13 +142,13 @@
 
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-         <version>${hc.javadoc.version}</version>
+        <version>${hc.javadoc.version}</version>
         <configuration>
           <!-- reduce console output. Can override with -Dquiet=false -->
           <quiet>true</quiet>
           <source>${maven.compiler.source}</source>
           <links>
-            <link>http://download.oracle.com/javase/1.5.0/docs/api/</link>
+            <link>http://docs.oracle.com/javase/6/docs/api/</link>
             <link>http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/</link>
           </links>
         </configuration>
@@ -135,7 +163,6 @@
 
       <plugin>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>${hc.project-info.version}</version>
         <inherited>false</inherited>
         <reportSets>
           <reportSet>
@@ -150,15 +177,31 @@
 
       <plugin>
         <artifactId>maven-jxr-plugin</artifactId>
-        <version>${hc.jxr.version}</version>
       </plugin>
 
       <plugin>
         <artifactId>maven-surefire-report-plugin</artifactId>
-        <version>${hc.surefire-report.version}</version>
       </plugin>
 
     </plugins>
   </reporting>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.googlecode.maven-download-plugin</groupId>
+            <artifactId>download-maven-plugin</artifactId>
+            <configuration>
+              <overwrite>true</overwrite>
+              <skipCache>true</skipCache>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

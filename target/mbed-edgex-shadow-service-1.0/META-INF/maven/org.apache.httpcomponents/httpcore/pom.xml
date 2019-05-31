@@ -28,13 +28,13 @@
   <parent>
     <groupId>org.apache.httpcomponents</groupId>
     <artifactId>httpcomponents-core</artifactId>
-    <version>4.3.2</version>
+    <version>4.4.11</version>
   </parent>
   <artifactId>httpcore</artifactId>
   <name>Apache HttpCore</name>
   <inceptionYear>2005</inceptionYear>
   <description>
-   HttpComponents Core (blocking I/O)
+   Apache HttpComponents Core (blocking I/O)
   </description>
   <url>http://hc.apache.org/httpcomponents-core-ga</url>
   <packaging>jar</packaging>
@@ -58,20 +58,10 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <filtering>true</filtering>
-        <includes>
-            <include>**/*.properties</include>
-        </includes>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.8</version>
         <executions>
           <execution>
           <id>add-source</id>
@@ -87,7 +77,34 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <executions>
+              <execution>
+                  <goals>
+                      <goal>test-jar</goal>
+                  </goals>
+              </execution>
+          </executions>
+        <configuration>
+          <archive>
+            <manifestEntries combine.children="append">
+              <Automatic-Module-Name>org.apache.httpcomponents.httpcore</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
     </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+            <include>**/*.properties</include>
+        </includes>
+      </resource>
+    </resources>
   </build>
 
   <reporting>
@@ -101,7 +118,7 @@
           <quiet>true</quiet>
           <source>${maven.compiler.source}</source>
           <links>
-            <link>http://download.oracle.com/javase/1.5.0/docs/api/</link>
+            <link>http://docs.oracle.com/javase/6/docs/api/</link>
           </links>
         </configuration>
         <reportSets>
