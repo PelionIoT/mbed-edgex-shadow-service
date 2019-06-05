@@ -58,6 +58,9 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
     // fake resources as RW to test out bidirectional path (default: false)
     public static final boolean FAKE_RW_RESOURCES = false;
     
+    // if faking RW resources, we can also create failed dispatch calls to test error conditions (false - FAIL, true - SUCCESS)
+    public static final boolean FAKE_RW_DISPATCH_STATUS = true; 
+    
     // mbed-edge core PT config
     private String m_edge_core_ws_pt_uri = null;
     private String m_edge_core_ws_mgmt_uri = null;
@@ -754,11 +757,26 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
         Response<String> response = new Response<>();
         ResponseError re = null;
         String res = "ok";
+        
+        // process an error condition by EdgeX...
         if (success == false) {
+            // processWriteRequest() failed... 
             re = new ResponseError(request.getId(),"error in processing write request");
             res = "error";
             response.setError(re);
         }
+        
+        // DEBUG
+        if (success == false) {
+            // FAIL
+            this.errorLogger().warning("PelionEdgeCoreClientAPI: EdgeX processWriteRequest() FAILED. Sending error: " + response);
+        }
+        else {
+            // SUCCESS
+            this.errorLogger().info("PelionEdgeCoreClientAPI: EdgeX processWriteRequest() SUCCESS.");
+        }
+        
+        // finish the response and send it...
         response.setId(request.getId());
         response.setResult(res);
         response.setError(re);
