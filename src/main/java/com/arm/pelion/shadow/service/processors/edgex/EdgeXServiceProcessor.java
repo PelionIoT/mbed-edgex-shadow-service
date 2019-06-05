@@ -38,7 +38,6 @@ import java.util.Map;
 import org.fusesource.mqtt.client.QoS;
 import org.fusesource.mqtt.client.Topic;
 import com.arm.pelion.shadow.service.interfaces.DeviceShadowProcessorInterface;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
@@ -466,7 +465,7 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
         byte decoded[] = Base64.getDecoder().decode(b64_payload);
         
         // DEBUG
-        this.errorLogger().info("convertMbedEncodedPayloadToNativeType: Base64: " + b64_payload + " len: " + decoded.length + " array: " + decoded);
+        //this.errorLogger().info("convertMbedEncodedPayloadToNativeType: Base64: " + b64_payload + " len: " + decoded.length + " array: " + decoded);
         
         Object value = null;
         EdgeXType type = this.getType(edgex_name,edgex_resource_name);

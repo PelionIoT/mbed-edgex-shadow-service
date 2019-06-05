@@ -3,6 +3,7 @@ com/arm/pelion/shadow/service/core/Utils.class
 com/arm/pelion/shadow/service/health/MbedEdgeCoreServiceHealthStatistic.class
 com/arm/pelion/shadow/service/transport/MQTTTransport.class
 com/arm/pelion/shadow/service/loggerservlet/LoggerTracker.class
+com/arm/pelion/shadow/service/processors/edgex/EdgeXType.class
 com/arm/pelion/shadow/service/processors/pelion/PelionShadowServiceProcessor.class
 com/arm/pelion/shadow/service/health/BaseValidatorClass.class
 Main$2.class
