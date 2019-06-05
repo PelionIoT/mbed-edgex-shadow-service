@@ -56,7 +56,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
     private static final int MAX_CONNECTION_ATTEMPTS = 10;
     
     // fake resources as RW to test out bidirectional path (default: false)
-    private static final boolean FAKE_RW_RESOURCES = true;
+    private static final boolean FAKE_RW_RESOURCES = false;
     
     // mbed-edge core PT config
     private String m_edge_core_ws_pt_uri = null;
@@ -109,9 +109,10 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
                         
                             // connect PT 
                             this.m_client_pt = new JsonRpcClientNettyWebSocket(this.m_edge_core_ws_pt_uri);
+                            this.m_client_pt.setServerRequestHandler(this);
                             this.m_client_pt.connect();
                         }
-
+                        
                         if (this.m_client_mgmt == null) {
                             // Connect MGMT
                             // DEBUG
@@ -121,10 +122,6 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
                             this.m_client_mgmt = new JsonRpcClientNettyWebSocket(this.m_edge_core_ws_mgmt_uri);
                             this.m_client_mgmt.connect();
                         }
-                        
-                        // set callback processors
-                        this.m_client_pt.setServerRequestHandler(this);
-                        this.m_client_mgmt.setServerRequestHandler(this);
 
                         // PT + MGMT connected!!
                         this.m_connected = true;
@@ -159,7 +156,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
                     this.errorLogger().info("PelionEdgeCoreClientAPI: Exception in PT disconnect(): " + ex.getMessage());
                 }
             }
-            
+                        
             // mbed-edge: closedown the WS socket (MGMT)
             if (this.m_client_mgmt != null) {
                 try {
@@ -748,29 +745,26 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
             
             // process the write request
             success = this.m_orchestrator.getEdgeXServiceProcessor().processWriteRequest(json);
-            
         }
         catch (Exception ex) {
             this.errorLogger().warning("PelionEdgeCoreClientAPI: Exception: " + ex.getMessage() + " in handleRequest()...",ex);
         }
         
-        /*
         // create the response and send it...
-        Response<Object> response = new Response<>();
+        Response<String> response = new Response<>();
         ResponseError re = null;
         String res = "ok";
         if (success == false) {
             re = new ResponseError(request.getId(),"error in processing write request");
-            res = null;
+            res = "error";
+            response.setError(re);
         }
         response.setId(request.getId());
         response.setResult(res);
         response.setError(re);
         
         // send the response
-        t.sendResponse(response);
-        */
-        t.sendVoidResponse();
+        t.sendResponseObject(response);
     }
 
     @Override
