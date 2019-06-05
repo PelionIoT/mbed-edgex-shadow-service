@@ -56,7 +56,7 @@ public class PelionEdgeCoreClientAPI extends BaseClass implements JsonRpcHandler
     private static final int MAX_CONNECTION_ATTEMPTS = 10;
     
     // fake resources as RW to test out bidirectional path (default: false)
-    private static final boolean FAKE_RW_RESOURCES = false;
+    public static final boolean FAKE_RW_RESOURCES = false;
     
     // mbed-edge core PT config
     private String m_edge_core_ws_pt_uri = null;

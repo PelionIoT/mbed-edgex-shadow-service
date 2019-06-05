@@ -22,6 +22,8 @@
  */
 package com.arm.pelion.shadow.service.processors.edgex;
 
+import com.arm.pelion.edge.core.client.api.Operations;
+import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
 import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.core.Transport.ReceiveListener;
@@ -40,6 +42,14 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
+
+//
+// Base Types
+//
+enum EdgeXType 
+{ 
+    FLOAT, INTEGER, STRING; 
+}; 
 
 /**
  * EdgeX Service Processor
@@ -359,43 +369,128 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
         return value;
     }
     
-    // convert the Mbed Encoded payload to its native Java type
-    private Object convertMbedEncodedPayloadToNativeType(String b64_payload,String edgex_name,String edgex_resource_name) {
-        return (Object)b64_payload;
-        
-        /*
-        byte decoded[] = Base64.getDecoder().decode(b64_payload);   
-        Object value = null;
-        
-        // XXX this isn't correct
-        if (b64_payload != null && b64_payload.length() > 0) {
-            try {
-                Float f = ByteBuffer.wrap(decoded).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-                value = (Object)f;
-            }
-            catch (Exception ex) {
-                try {
-                    BigInteger bi = new BigInteger(decoded);
-                    value = (Object)bi;
-                }
-                catch (Exception ex1) {
-                    try {
-                        String str = new String(decoded);
-                        value = (String)str;
-                    }
-                    catch (Exception ex2) {
-                        // unable to map
-                        this.errorLogger().warning("convertMbedEncodedPayloadToNativeType: unable to find native type: " + b64_payload);
-                    }
+    // get the named resource from the list
+    private Map lookupResourceByName(String name,List resources) {
+        Map resource = new HashMap<String,String>();
+        boolean found = false;
+        if (resources != null && resources.size() > 0) {
+            for(int i=0;i<resources.size() && !found;++i) {
+                Map entry = (Map)resources.get(i);
+                String t_name = (String)entry.get("name");
+                if (name != null && t_name != null && name.equalsIgnoreCase(t_name)) {
+                    found = true;
+                    resource = entry;
                 }
             }
         }
+        
+        return resource;
+    }
+    
+    // get the type from our shadow
+    private EdgeXType getType(String edgex_name,String edgex_resource_name) {
+        EdgeXType t = EdgeXType.STRING;
+        Map device = this.m_msp.getDB().getEdgeXDevice(edgex_name);
+        if (device != null && device.isEmpty() == false) {
+            // DEBUG
+            this.errorLogger().info("EdgeX(getType): Resource: " + edgex_resource_name +  " Device: " + device);
+            
+            // Get the list of resources
+            Map resource = this.lookupResourceByName(edgex_resource_name,(List)device.get("resources"));
+            if (resource != null) {
+                // Get the type from the resource
+                String type = (String)resource.get("type");
+                
+                // Look for Int --> INTEGER
+                if (type != null && type.contains("Int")) {
+                    t = EdgeXType.INTEGER;
+                }
+                
+                // Look for Float --> FLOAT
+                if (type != null && type.contains("Float")) {
+                    t = EdgeXType.FLOAT;
+                }
+                
+                // Everything else is STRING
+                
+                // DEBUG
+                this.errorLogger().info("EdgeX(getType): Resource: " + edgex_resource_name +  " Type: " + type + " EdgeXType: " + t);
+            }
+        }
+        return t;
+    }
+    
+    // get the resource operations from our shadow
+    private int getResourceOperations(String edgex_name,String edgex_resource_name) {
+        int operation = 0;
+        Map device = this.m_msp.getDB().getEdgeXDevice(edgex_name);
+        if (device != null && device.isEmpty() == false) {
+            // DEBUG
+            this.errorLogger().info("EdgeX(getResourceOperations): Resource: " + edgex_resource_name +  " Device: " + device);
+            
+            // Get the list of resources
+            Map resource = this.lookupResourceByName(edgex_resource_name,(List)device.get("resources"));
+            if (resource != null) {
+                // Get the type from the resource
+                String rwx = (String)resource.get("rw");
+                
+                // DEBUG
+                this.errorLogger().info("EdgeX(getResourceOperations): Resource: " + edgex_resource_name +  " Operation: " + rwx);
+                
+                // READ
+                if (rwx != null && rwx.equalsIgnoreCase("R")) {
+                    operation = Operations.READ;
+                }
+                
+                // WRITE
+                if (rwx != null && rwx.equalsIgnoreCase("W")) {
+                    operation = Operations.WRITE;
+                }
+                
+                // READ/WRITE
+                if (rwx != null && (rwx.equalsIgnoreCase("RW") || rwx.equalsIgnoreCase("WR"))) {
+                    operation = (Operations.READ | Operations.WRITE);
+                }
+            }
+        }
+        return operation;
+    }
+    
+    // packing an array of 4 bytes to an int, big endian
+    long fromByteArray(byte[] bytes) {
+         return (bytes[0] << 24) | (bytes[1] & 0xFF) << 16 | (bytes[2] & 0xFF) << 8 | (bytes[3] & 0xFF);
+    }
+    
+    // convert the Mbed Encoded payload to its native Java type
+    private Object convertMbedEncodedPayloadToNativeType(String b64_payload,String edgex_name,String edgex_resource_name) {
+        byte decoded[] = Base64.getDecoder().decode(b64_payload);
+        
+        // DEBUG
+        this.errorLogger().info("convertMbedEncodedPayloadToNativeType: Base64: " + b64_payload + " len: " + decoded.length + " array: " + decoded);
+        
+        Object value = null;
+        EdgeXType type = this.getType(edgex_name,edgex_resource_name);
+        if (type == EdgeXType.FLOAT) {
+            // its a float/Double
+            value = (Object)ByteBuffer.wrap(decoded).order(ByteOrder.BIG_ENDIAN).getDouble();
+        }
+        else if (type == EdgeXType.INTEGER) {
+            // its an int/long
+            Long l = (Long)ByteBuffer.wrap(decoded).getLong();
+            value = (Object)l;
+        }
+        else {
+            // its a string (default)
+            String s = new String(decoded);
+            value = (Object)s;
+        }
+        
         return value;
-        */
     }
     
     // process a resource write request
     public boolean processWriteRequest(Map mbed_request) {
+        boolean status = false;
         try {
             // Pull the fields for the request
             Map params = (Map)mbed_request.get("params");
@@ -412,18 +507,39 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
             // convert to and EdgeX format
             String edgex_resource = this.m_msp.mapMbedResourcePathToEdgeXResource(mbed_uri);
             String edgex_name = deviceId; // direct mapping
-            Object edgex_value = this.convertMbedEncodedPayloadToNativeType(b64_encoded_value,edgex_name,edgex_resource);
             
-            // DEBUG
-            this.errorLogger().warning("EdgeXServiceProcessor: Write Request: Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value);
-        
+            Object edgex_value = this.convertMbedEncodedPayloadToNativeType(b64_encoded_value,edgex_name,edgex_resource);
+            int edgex_operation = this.getResourceOperations(edgex_name, edgex_resource);
+                    
+            // ensure we have rw abilities
+            if (edgex_operation == 1) {
+                if (PelionEdgeCoreClientAPI.FAKE_RW_RESOURCES == true) {
+                    // simulated RW resources for testing paths... disabled by default
+                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request OK: (SIMULATE RW) Resource: Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
+                    status = true;
+                }
+                else {
+                    // unable to write to a read-only resource
+                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request FAILED: Read-Only Resource: Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
+                }
+            }
+            else {
+                 // DEBUG
+                 this.errorLogger().warning("EdgeXServiceProcessor: Write Request(RW): Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation);
+                 
+                 // XXX attempt the write and note the http response
+                 
+                 // return the write status
+                 status = true;
+            }
+            
             // return our status
-            return true;
+            return status;
         }
         catch (Exception ex) {
             // error processing write request
             this.errorLogger().warning("EdgeXServiceProcessor: Exception: " + ex.getMessage() + " in processWriteRequest()", ex);
-            return false;
         }
+        return false;
     }
 }
