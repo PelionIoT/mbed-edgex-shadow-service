@@ -600,7 +600,7 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
                 if (status == true) {
                     // success
                     this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): URL: " + url + " Body: " + body);
-                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request(RW): SUCCESS.");
+                    this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): SUCCESS.");
                 }
                 else {
                     // failure
