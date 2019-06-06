@@ -55,6 +55,9 @@ enum EdgeXType
  * @author Doug Anson
  */
 public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener {
+    // if set to true, writeRequest processing will ignore the operations value in EdgeX resources (default: false - dont ignore)
+    private static final boolean IGNORE_EDGEX_RESOURCE_OPERATIONS = false;
+    
     private MQTTTransport m_mqtt = null;
     private String m_mqtt_hostname = null;
     private int m_mqtt_port = 1883;
@@ -565,47 +568,69 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
             // Send the body as a POST to the event processor
             String url = this.buildEdgeXEventProcessorURL();
                  
-            // ensure we have rw abilities
-            if (edgex_operation == 1) {
-                // simulation mode?
-                if (PelionEdgeCoreClientAPI.FAKE_RW_RESOURCES == true) {
-                    // DEBUG
-                    this.errorLogger().info("EdgeXServiceProcessor: Write Request(SIMULATE RW): Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
-                    
-                    // dispatch the event and return the status (SIMULATED)
-                    status = this.dispatchEvent(url,body);
-                    if (status == true) {
-                        // success
-                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): URL: " + url + " Body: " + body);
-                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): SUCCESS.");
+            // do we ignore edgex resource operations?
+            if (IGNORE_EDGEX_RESOURCE_OPERATIONS == false) {
+                // ensure we have rw abilities
+                if (edgex_operation == 1) {
+                    // simulation mode?
+                    if (PelionEdgeCoreClientAPI.FAKE_RW_RESOURCES == true) {
+                        // DEBUG
+                        this.errorLogger().info("EdgeXServiceProcessor: Write Request(SIMULATE RW): Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
+
+                        // dispatch the event and return the status (SIMULATED)
+                        status = this.dispatchEvent(url,body);
+                        if (status == true) {
+                            // success
+                            this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): URL: " + url + " Body: " + body);
+                            this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): SUCCESS.");
+                        }
+                        else {
+                            // failure
+                            this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): URL: " + url + " Body: " + body);
+                            this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): FAILED.");
+                        }
                     }
                     else {
-                        // failure
-                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): URL: " + url + " Body: " + body);
-                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(SIMULATE RW): FAILED.");
+                        // unable to write to a read-only resource
+                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(R) FAILED: Read-Only Resource: Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
+                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(R): URL: " + url + " Body: " + body);
                     }
                 }
                 else {
-                    // unable to write to a read-only resource
-                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request(R) FAILED: Read-Only Resource: Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
-                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request(R): URL: " + url + " Body: " + body);
+                    // DEBUG
+                    this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
+
+                    // dispatch the event and return the status
+                    status = this.dispatchEvent(url,body); 
+                    if (status == true) {
+                        // success
+                        this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): URL: " + url + " Body: " + body);
+                        this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): SUCCESS.");
+                    }
+                    else {
+                        // failure
+                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(RW): URL: " + url + " Body: " + body);
+                        this.errorLogger().warning("EdgeXServiceProcessor: Write Request(RW): FAILED");
+                    }
                 }
             }
             else {
+                // forced attempt to update...
+                
                 // DEBUG
-                this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
-                 
+                this.errorLogger().info("EdgeXServiceProcessor: Write Request(IGN): Device: " + edgex_name + " EdgeX Resource: " + edgex_resource + " Value: " + edgex_value + " Operation(Mbed/Edgex): " + operation + "/" + edgex_operation); 
+
                 // dispatch the event and return the status
                 status = this.dispatchEvent(url,body); 
                 if (status == true) {
                     // success
-                    this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): URL: " + url + " Body: " + body);
-                    this.errorLogger().info("EdgeXServiceProcessor: Write Request(RW): SUCCESS.");
+                    this.errorLogger().info("EdgeXServiceProcessor: Write Request(IGN): URL: " + url + " Body: " + body);
+                    this.errorLogger().info("EdgeXServiceProcessor: Write Request(IGN): SUCCESS.");
                 }
                 else {
                     // failure
-                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request(RW): URL: " + url + " Body: " + body);
-                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request(RW): FAILED");
+                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request(IGN): URL: " + url + " Body: " + body);
+                    this.errorLogger().warning("EdgeXServiceProcessor: Write Request(IGN): FAILED");
                 }
             }
             
