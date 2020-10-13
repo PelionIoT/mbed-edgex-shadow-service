@@ -25,12 +25,12 @@ limitations under the License.
   <parent>
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-parent</artifactId>
-    <version>47</version>
+    <version>52</version>
   </parent>
   <groupId>commons-codec</groupId>
   <artifactId>commons-codec</artifactId>
   <!-- Remember to update the version in default.properties as well -->
-  <version>1.12</version>
+  <version>1.15</version>
   <name>Apache Commons Codec</name>
   <inceptionYear>2002</inceptionYear>
   <description>
@@ -39,10 +39,10 @@ limitations under the License.
      widely used encoders and decoders, the codec package also maintains a
      collection of phonetic encoding utilities.
   </description>
-  <url>http://commons.apache.org/proper/commons-codec/</url>
+  <url>https://commons.apache.org/proper/commons-codec/</url>
   <issueManagement>
     <system>jira</system>
-    <url>http://issues.apache.org/jira/browse/CODEC</url>
+    <url>https://issues.apache.org/jira/browse/CODEC</url>
   </issueManagement>
   <scm>
     <connection>scm:git:https://gitbox.apache.org/repos/asf?p=commons-codec.git</connection>
@@ -53,7 +53,7 @@ limitations under the License.
     <site>
       <id>stagingSite</id>
       <name>Apache Staging Website</name>
-      <url>${commons.deployment.protocol}://people.apache.org/www/commons.apache.org/${commons.componentid}/</url>
+      <url>${commons.deployment.protocol}://people.apache.org/www/commons.apache.org/commons-${commons.componentid}/</url>
     </site>
   </distributionManagement>
   <developers>
@@ -93,7 +93,7 @@ limitations under the License.
       <id>ggregory</id>
       <email>ggregory@apache.org</email>
       <url>http://www.garygregory.com</url>
-      <timezone>-7</timezone>
+      <timezone>-5</timezone>
     </developer>
     <developer>
       <name>David Graham</name>
@@ -207,19 +207,27 @@ limitations under the License.
         <role>Submitted Match Rating Approach (MRA) phonetic encoder and tests [CODEC-161]</role>
       </roles>
     </contributor>
+    <contributor>
+      <name>Adam Retter</name>
+      <organization>Evolved Binary</organization>
+      <roles>
+        <role>Base16 Input and Output Streams</role>
+      </roles>
+    </contributor>
   </contributors>
   <!-- Codec only has test dependencies ATM -->
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <version>4.13</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.8.1</version>
+      <!-- 3.9+ needs Java8 -->
+      <version>3.8</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -236,23 +244,21 @@ limitations under the License.
     <commons.encoding>UTF-8</commons.encoding>
     <checkstyle.header.file>${basedir}/LICENSE-header.txt</checkstyle.header.file>
     <checkstyle.version>2.17</checkstyle.version>
-
-    <commons.jacoco.version>0.8.3</commons.jacoco.version>
+    <commons.japicmp.version>0.14.3</commons.japicmp.version>
+    <commons.jacoco.version>0.8.5</commons.jacoco.version>
 
     <!-- generate report even if there are binary incompatible changes -->
     <commons.japicmp.breakBuildOnBinaryIncompatibleModifications>false</commons.japicmp.breakBuildOnBinaryIncompatibleModifications>
-    <!-- 0.12.0 dies with a NullPointerException -->
-    <commons.japicmp.version>0.13.0</commons.japicmp.version>
     <japicmp.skip>false</japicmp.skip>
 
     <!-- Commons Release Plugin -->
-    <commons.bc.version>1.11</commons.bc.version>
-    <commons.rc.version>RC3</commons.rc.version>
-    <commons.release-plugin.version>1.5</commons.release-plugin.version>
+    <commons.bc.version>1.14</commons.bc.version>
+    <commons.rc.version>RC1</commons.rc.version>
+    <commons.release-plugin.version>1.7</commons.release-plugin.version>
     <commons.release.isDistModule>true</commons.release.isDistModule>
     <commons.distSvnStagingUrl>scm:svn:https://dist.apache.org/repos/dist/dev/commons/${commons.componentid}</commons.distSvnStagingUrl>
-    <commons.releaseManagerName>Rob Tompkins</commons.releaseManagerName>
-    <commons.releaseManagerKey>B6E73D84EA4FCC47166087253FAAD2CD5ECBB314</commons.releaseManagerKey>
+    <commons.releaseManagerName>Alex Herbert</commons.releaseManagerName>
+    <commons.releaseManagerKey>BC87A3FD0A54480F0BADBEBD21939FF0CA2A6567</commons.releaseManagerKey>
   </properties>
   <build>
     <defaultGoal>clean verify apache-rat:check clirr:check javadoc:javadoc</defaultGoal>
@@ -268,13 +274,6 @@ limitations under the License.
             </ignorePathsToDelete>
           </configuration>
         </plugin>
-        <plugin>
-          <groupId>com.github.siom79.japicmp</groupId>
-          <artifactId>japicmp-maven-plugin</artifactId>
-          <configuration>
-            <skip>false</skip>
-          </configuration>
-        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -284,7 +283,9 @@ limitations under the License.
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>src/site/resources/.htaccess</exclude>
+            <exclude>src/test/resources/org/apache/commons/codec/bla.tar.xz</exclude>
+            <exclude>src/test/resources/org/apache/commons/codec/empty.bin</exclude>
+            <exclude>src/test/resources/org/apache/commons/codec/small.bin</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -333,10 +334,30 @@ limitations under the License.
           <headerFile>${basedir}/LICENSE-header.txt</headerFile>
         </configuration>
       </plugin>
+      <!-- Specify source for JDK 11+ javadoc tool to ignore the 'unamed' module.
+           See: https://bugs.openjdk.java.net/browse/JDK-8212233.
+           To be removed with parent 49. -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <source>${maven.compiler.source}</source>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <reporting>
     <plugins>
+      <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>src/test/resources/org/apache/commons/codec/bla.tar.xz</exclude>
+            <exclude>src/test/resources/org/apache/commons/codec/empty.bin</exclude>
+            <exclude>src/test/resources/org/apache/commons/codec/small.bin</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
@@ -358,7 +379,7 @@ limitations under the License.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
-        <version>3.8</version>
+        <version>${commons.pmd.version}</version>
         <configuration>
           <targetJdk>${maven.compiler.target}</targetJdk>
           <linkXref>true</linkXref>
@@ -389,18 +410,21 @@ limitations under the License.
         <artifactId>javancss-maven-plugin</artifactId>
         <version>2.1</version>
       </plugin>
-      <plugin>
-        <groupId>org.apache.rat</groupId>
-        <artifactId>apache-rat-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>src/site/resources/.htaccess</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
     </plugins>
   </reporting>
   <profiles>
+    <!-- profile to allow the use of plugin versions that require Java 7 -->
+    <!-- TODO remove when CP updated to version 51 -->
+    <profile>
+      <id>jdk7-plugin-fix-version</id>
+      <activation>
+        <jdk>[1.7,1.8)</jdk>
+      </activation>
+      <properties>
+        <!-- Fix to build on JDK 7: version 1.18 requires Java 8. -->
+        <commons.animal-sniffer.version>1.17</commons.animal-sniffer.version>
+      </properties>
+    </profile>
     <profile>
       <id>java9+</id>
       <activation>

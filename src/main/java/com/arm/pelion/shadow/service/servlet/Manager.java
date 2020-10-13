@@ -60,11 +60,22 @@ public final class Manager {
         DeviceShadowProcessorInterface msp = new PelionShadowServiceProcessor(this.m_error_logger,this.m_preference_manager,this.m_orchestrator);
         
         // add our EdgeX event processor
-        EdgeXServiceProcessor edgex = new EdgeXServiceProcessor(this.m_error_logger,this.m_preference_manager,msp);
+        EdgeXServiceProcessor edgex = new EdgeXServiceProcessor(this.m_error_logger,this.m_preference_manager,msp,this.m_orchestrator);
         
         // bind in orchestrator
         this.m_orchestrator.setMbedEdgeCoreServiceProcessor(msp);
         this.m_orchestrator.setEdgeXServiceProcessor(edgex);
+        
+        // direct the EdgeX processor to register its MQTT exporter
+        boolean registered = edgex.createMQTTExporterInEdgeX();
+        if (registered) {
+            // Success
+            this.errorLogger().warning("EdgeX MQTT Exporter Registered OK");
+        }
+        else {
+            // Failure
+            this.errorLogger().warning("EdgeX MQTT Exporter Registration FAILED");
+        }
     }
 
     // get the error logger

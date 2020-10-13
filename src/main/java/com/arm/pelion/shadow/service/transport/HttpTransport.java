@@ -190,14 +190,19 @@ public class HttpTransport extends BaseClass {
         this.m_if_match_header_value = null;
     }
     
-    // HTTPS Get (local)
+    // HTTP Get (local)
     public String httpGet(String url) {
         return this.dispatchHTTPS("GET", url, null, null, null, "application/json", true, false, false, false, null);
     }
     
-    // HTTPS Put (local)
+    // HTTP Put (local)
     public String httpPut(String url,String value) {
         return this.dispatchHTTPS("PUT", url, null, null, value, "application/json", true, false, false, false, null);
+    }
+    
+    // HTTP Put (local)
+    public String httpPost(String url,String value) {
+        return this.dispatchHTTPS("POST", url, null, null, value, "application/json", true, false, false, false, null);
     }
 
     // execute GET over https

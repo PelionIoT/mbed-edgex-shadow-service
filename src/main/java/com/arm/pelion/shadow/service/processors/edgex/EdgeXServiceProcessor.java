@@ -24,6 +24,7 @@ package com.arm.pelion.shadow.service.processors.edgex;
 
 import com.arm.pelion.edge.core.client.api.Operations;
 import com.arm.pelion.edge.core.client.api.PelionEdgeCoreClientAPI;
+import com.arm.pelion.shadow.service.coordinator.Orchestrator;
 import com.arm.pelion.shadow.service.core.BaseClass;
 import com.arm.pelion.shadow.service.core.ErrorLogger;
 import com.arm.pelion.shadow.service.core.Transport.ReceiveListener;
@@ -58,6 +59,7 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     // if set to true, writeRequest processing will ignore the operations value in EdgeX resources (default: false - dont ignore)
     private static final boolean IGNORE_EDGEX_RESOURCE_OPERATIONS = false;
     
+    private Orchestrator m_orchestrator = null;
     private MQTTTransport m_mqtt = null;
     private String m_mqtt_hostname = null;
     private int m_mqtt_port = 1883;
@@ -68,15 +70,21 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     // Configuration
     private String m_edgex_ip_address = null;
     private int m_edgex_metadata_port = 0;
+    private int m_edgex_event_port = 0;
+    private int m_edgex_registration_port = 0;
     private String m_edgex_metadata_uri = null;
+    private int m_mqtt_edgex_exporter_port = 0;
     
     private int m_edgex_resource_values_port = 0;
     private String m_edgex_value_request_uri = null;
     private String m_edgex_value_set_request_uri = null;
 
     // base constructor
-    public EdgeXServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager,DeviceShadowProcessorInterface msp) {
+    public EdgeXServiceProcessor(ErrorLogger error_logger, PreferenceManager preference_manager,DeviceShadowProcessorInterface msp,Orchestrator orchestrator) {
         super(error_logger, preference_manager);
+        
+        // note our orchestrator
+        this.m_orchestrator = orchestrator;
         
         // set our mbed shadow processor
         this.m_msp = msp;
@@ -98,7 +106,10 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
         // EdgeX configuration
         this.m_edgex_ip_address = preference_manager.valueOf("edgex_ip_address");
         this.m_edgex_metadata_port = preference_manager.intValueOf("edgex_metadata_port");
+        this.m_edgex_registration_port = preference_manager.intValueOf("edgex_registration_port");
+        this.m_edgex_event_port = preference_manager.intValueOf("edgex_event_port");
         this.m_edgex_metadata_uri = preference_manager.valueOf("edgex_metadata_uri");
+        this.m_mqtt_edgex_exporter_port = preference_manager.intValueOf("mqtt_edgex_exporter_port");
         
         // EdgeX resource values editing
         this.m_edgex_resource_values_port = preference_manager.intValueOf("edgex_resource_values_port");
@@ -160,7 +171,12 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     
     // create the event processor URL
     private String buildEdgeXEventProcessorURL() {
-        return "http://" + this.m_edgex_ip_address + ":" + this.m_edgex_metadata_port + "/api/v1/event";
+        return "http://" + this.m_edgex_ip_address + ":" + this.m_edgex_event_port + "/api/v1/event";
+    }
+    
+    // create the MQTT exporter registration URL
+    private String buildEdgeXMQTTExporterRegistrationURL() {
+        return "http://" + this.m_edgex_ip_address + ":" + this.m_edgex_registration_port + "/api/v1/registration";
     }
     
     // closedown the mbed Client service processor
@@ -184,6 +200,9 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
            try {
                 // Parse the JSON
                 Map edgex_message = this.jsonParser().parseJson(message);
+                
+                // DEBUG
+                //this.errorLogger().warning("EdgeXServiceProcessor: Received Message: " + edgex_message);
 
                 // is the device shadowed already?
                 if (this.m_msp.deviceShadowed(edgex_message) == false) {
@@ -234,6 +253,9 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     
     // trim and reduce the EdgeX metadata that we are interested in...
     public Map trimEdgeXMetadata(Map raw_edgex_metadata) {
+        // DEBUG
+        this.errorLogger().warning("EdgeXServiceProcessor: Raw Message: " + raw_edgex_metadata);
+        
         // Create a new HashMap
         HashMap<String,Object> edgex_metadata = new HashMap<>();
         
@@ -516,9 +538,11 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
     
     // create the event
     private boolean dispatchEvent(String url,String body) {
-        if (PelionEdgeCoreClientAPI.FAKE_RW_RESOURCES == true) {
-            // return the desired failure status
-            return PelionEdgeCoreClientAPI.FAKE_RW_DISPATCH_STATUS;
+        if (IGNORE_EDGEX_RESOURCE_OPERATIONS == false) {
+            if (PelionEdgeCoreClientAPI.FAKE_RW_RESOURCES == true) {
+                // return the desired failure status
+                return PelionEdgeCoreClientAPI.FAKE_RW_DISPATCH_STATUS;
+            }
         }
         
         // call HTTP and return the status
@@ -641,6 +665,58 @@ public class EdgeXServiceProcessor extends BaseClass implements ReceiveListener 
             // error processing write request
             this.errorLogger().warning("EdgeXServiceProcessor: Exception: " + ex.getMessage() + " in processWriteRequest()", ex);
         }
+        return false;
+    }
+    
+    // create the MQTT Exporter JSON Body
+    private String createMQTTExporterJSONBody() {
+       HashMap<String,Object> addressable = new HashMap<>();
+       addressable.put("name","edgex");
+       addressable.put("protocol","TCP");
+       addressable.put("method","POST");
+       addressable.put("address",this.m_edgex_ip_address);
+       addressable.put("port", (Integer)this.m_mqtt_edgex_exporter_port);
+       //addressable.put("path",(String)null);
+       addressable.put("publisher","edgex");
+       addressable.put("user",this.preferences().valueOf("mqtt_username"));
+       addressable.put("password",this.preferences().valueOf("mqtt_password"));
+       addressable.put("topic",this.m_mqtt_event_topic);
+       addressable.put("baseURL","TCP://" + this.m_edgex_ip_address + ":" + this.m_mqtt_edgex_exporter_port);
+       addressable.put("url","TCP://" + this.m_edgex_ip_address + ":" + this.m_mqtt_edgex_exporter_port);
+       
+       HashMap<String,Object> body = new HashMap<>();
+       body.put("addressable",addressable);
+       body.put("name","edgex");
+       body.put("format","JSON");
+       body.put("compression","NONE");
+       body.put("enable",(Boolean)true);
+       body.put("destination","MQTT_TOPIC");
+       
+       return this.m_orchestrator.getJSONGenerator().generateJson(body);
+    }
+    
+    // register a MQTT exporter within EdgeX
+    public boolean createMQTTExporterInEdgeX() {
+        // create the registration body
+        String body = this.createMQTTExporterJSONBody();
+        
+        // create the registration URL
+        String url = this.buildEdgeXMQTTExporterRegistrationURL();
+        
+        // DEBUG
+        this.errorLogger().warning("PelionShadowServiceProcessor: Registering MQTT Exporter: URL: " + url + " BODY: " + body);
+        
+        // register and return the status
+        this.m_http.httpPost(url,body);
+        int http_code = this.m_http.getLastResponseCode();
+        if (http_code < 300) {
+            // success!
+            this.errorLogger().warning("PelionShadowServiceProcessor: Registering MQTT Exporter - SUCCESS");
+            return true;
+        }
+        
+        // Failure
+        this.errorLogger().warning("PelionShadowServiceProcessor: Registering MQTT Exporter - FAILURE: Code: " + http_code);
         return false;
     }
 }
